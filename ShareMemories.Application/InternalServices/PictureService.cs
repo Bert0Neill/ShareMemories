@@ -1,6 +1,7 @@
 ﻿using ShareMemories.Application.Interfaces;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Domain.Models;
+using ShareMemories.Infrastructure.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,10 +13,11 @@ namespace ShareMemories.Application.InternalServices
     public class PictureService : IPictureService
     {
         private readonly List<Picture> _pictures = new();
-        //private readonly ShareMemoriesContext _context;
+        private readonly IPictureRepository _pictureRepository;
 
-        public PictureService()
+        public PictureService(IPictureRepository PictureRepository)
         {
+            _pictureRepository = PictureRepository;
 
             // Create new Picture instances
             var picture1 = new Picture
@@ -54,12 +56,10 @@ namespace ShareMemories.Application.InternalServices
             return this._pictures;
         }
 
-        public Task<Picture> GetPictureAsync(int id)
+        public async Task<Picture> GetPictureAsync(int id)
         {
-            // use await for DB actions and remove FromResult below
-
-            var picture = _pictures.Find(x => x.Id == id);
-            return Task.FromResult(picture);
+            var picture = await _pictureRepository.RetrievePictureByIdAsync(id);
+            return picture;
         }
 
         public Task<Picture> InsertPictureAsync(Picture picture)

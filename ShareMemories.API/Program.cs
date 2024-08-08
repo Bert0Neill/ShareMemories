@@ -36,12 +36,13 @@ try
     *           Register DbContext and provide ConnectionString              *
     **************************************************************************/
     builder.Services.AddDbContext<ShareMemoriesContext>(db => db.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Singleton);
-
+    
     /*************************************************************************
     *                       Dependency Injection                             *
     **************************************************************************/
     //builder.Services.AddTransient<IDistributedService, SqlServerDistributedService>(); // DI service class
     builder.Services.AddScoped<IPictureService, PictureService>();
+    builder.Services.AddScoped<IPictureRepository, PictureRepository>();
     //builder.Services.AddScoped<IAuthService, AuthService>();
 
     /*************************************************************************

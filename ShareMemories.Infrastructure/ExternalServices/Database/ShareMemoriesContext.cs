@@ -36,6 +36,7 @@ public partial class ShareMemoriesContext : Microsoft.AspNetCore.Identity.Entity
         modelBuilder.Entity<IdentityUserRole<string>>()
             .HasKey(ur => new { ur.UserId, ur.RoleId });
 
+        // creating relationships for Migrations\deployment
         modelBuilder.Entity<Friendship>(entity =>
         {
             entity.ToTable("Friendship");
