@@ -12,6 +12,8 @@ namespace ShareMemories.Application.InternalServices
     public class PictureService : IPictureService
     {
         private readonly List<Picture> _pictures = new();
+        //private readonly ShareMemoriesContext _context;
+
         public PictureService()
         {
 
@@ -41,6 +43,11 @@ namespace ShareMemories.Application.InternalServices
             _pictures.Add(picture2);
 
         }
+
+        //public async Task<List<Picture>> GetPicturesAsync()
+        //{
+        //    return await _context.Pictures.ToListAsync();
+        //}
 
         public List<Picture> GetPictures()
         {
