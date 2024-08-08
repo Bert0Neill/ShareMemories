@@ -1,5 +1,8 @@
+using Ardalis.GuardClauses;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.MinimalAPIs;
 using ShareMemories.API.Endpoints.Picture;
@@ -29,6 +32,10 @@ try
     **************************************************************************/
     builder.Services.AddDbContext<ShareMemoriesContext>(db => db.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Singleton);
 
+    /*************************************************************************
+    *                           Register Response Caching                   *
+    **************************************************************************/
+    builder.Services.AddOutputCache();
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
@@ -41,6 +48,15 @@ try
     builder.Services.AddScoped<IPictureService, PictureService>();
     //builder.Services.AddScoped<IAuthService, AuthService>();
 
+    /*************************************************************************
+    *   Response output caching (duration) policies - default is 10 seconds  *
+    **************************************************************************/
+    builder.Services.AddOutputCache(options =>
+    {
+        options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
+        options.AddPolicy("Expire30", builder => builder.Expire(TimeSpan.FromSeconds(30)));
+        options.AddPolicy("Expire60", builder => builder.Expire(TimeSpan.FromSeconds(60)));
+    });
 
     var app = builder.Build();
 
@@ -63,6 +79,11 @@ try
     **************************************************************************/
     // app.MapIdentityApi<IdentityUser>();
 
+    /*************************************************************************
+    *                         Use Output Caching                             *
+    **************************************************************************/
+    app.UseOutputCache();
+
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
@@ -83,6 +104,9 @@ try
     //*************************************************/
     //new BooksAPIs(app).RegisterBooksAPI();
     //new LoginRegisterAPIs(app).RegisterLoginAPI();
+
+    
+
 
     app.Run();
 
