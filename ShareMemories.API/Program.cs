@@ -33,30 +33,29 @@ try
     builder.Services.AddDbContext<ShareMemoriesContext>(db => db.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Singleton);
 
     /*************************************************************************
+    *                       Dependency Injection                             *
+    **************************************************************************/
+    //builder.Services.AddTransient<IDistributedService, SqlServerDistributedService>(); // DI service class
+    builder.Services.AddScoped<IPictureService, PictureService>();
+    //builder.Services.AddScoped<IAuthService, AuthService>();
+
+    /*************************************************************************
+     *   Response output caching (duration) policies - default is 5 seconds  *
+     **************************************************************************/
+    builder.Services.AddOutputCache(options =>
+    {
+        options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(5)));
+        options.AddPolicy("Expire30", builder => builder.Expire(TimeSpan.FromSeconds(30)));
+        options.AddPolicy("Expire60", builder => builder.Expire(TimeSpan.FromSeconds(60)));
+    });
+
+    /*************************************************************************
     *                           Register Response Caching                   *
     **************************************************************************/
     builder.Services.AddOutputCache();
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
-
-    /*************************************************************************
-    *                       Dependency Injection                             *
-    **************************************************************************/
-    //builder.Services.AddTransient<IDistributedService, SqlServerDistributedService>(); // DI service class
-    //builder.Services.AddDbContext<SqlServerEmployeeDatabaseContext>(); // DI database context
-    builder.Services.AddScoped<IPictureService, PictureService>();
-    //builder.Services.AddScoped<IAuthService, AuthService>();
-
-    /*************************************************************************
-    *   Response output caching (duration) policies - default is 10 seconds  *
-    **************************************************************************/
-    builder.Services.AddOutputCache(options =>
-    {
-        options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
-        options.AddPolicy("Expire30", builder => builder.Expire(TimeSpan.FromSeconds(30)));
-        options.AddPolicy("Expire60", builder => builder.Expire(TimeSpan.FromSeconds(60)));
-    });
 
     var app = builder.Build();
 

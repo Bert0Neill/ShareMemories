@@ -1,0 +1,9 @@
+﻿Post Picture
+
+{
+  "id": 0,
+  "userId": 0,
+  "friendlyName": "string",
+"picture1": "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",
+  "isArchived": true
+}

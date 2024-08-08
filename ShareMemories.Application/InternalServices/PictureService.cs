@@ -47,12 +47,24 @@ namespace ShareMemories.Application.InternalServices
             return this._pictures;
         }
 
-        public Picture GetPicture(int id)
+        public Task<Picture> GetPictureAsync(int id)
         {
-            var picture = _pictures.Find(x => x.Id == id);
+            // use await for DB actions and remove FromResult below
 
-            return picture;
+            var picture = _pictures.Find(x => x.Id == id);
+            return Task.FromResult(picture);
         }
 
+        public Task<Picture> InsertPictureAsync(Picture picture)
+        {
+            // use await for DB actions and remove FromResult below
+
+            int maxId = _pictures.Any() ? _pictures.Max(x => x.Id) : 0;
+            maxId++;
+            picture.Id = maxId;
+            _pictures.Add(picture);
+
+            return Task.FromResult(picture);
+        }
     }
 }
