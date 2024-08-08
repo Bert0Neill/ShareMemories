@@ -1,7 +1,9 @@
 using Ardalis.GuardClauses;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.MinimalAPIs;
@@ -11,9 +13,12 @@ using ShareMemories.API.Endpoints.Weather;
 using ShareMemories.API.Extensions;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
+using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Database;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
+using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +59,59 @@ try
     **************************************************************************/
     builder.Services.AddOutputCache();
 
+    /*************************************************************************
+    *       Register Identity Endpoints (Register\login\Refresh etc.)        *
+    **************************************************************************/
+    builder.Services
+        .AddIdentityApiEndpoints<IdentityUser>()
+        .AddEntityFrameworkStores<ShareMemoriesContext>()
+        .AddApiEndpoints();
+
+
+    /*************************************************************************
+    *                       Add Bearer JWT Authentication                    *
+    **************************************************************************/
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+
+    }).AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters()
+        {
+            ValidateActor = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            RequireExpirationTime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration.GetSection("Jwt:Issuer").Value,
+            ValidAudience = builder.Configuration.GetSection("Jwt:Audience").Value,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value))
+        };
+    });
+
+    ///*************************************************************************
+    //*                           Add Password strength                        *
+    //**************************************************************************/
+    //builder.Services.AddIdentity<ExtendedIdentityUser, IdentityRole>(options =>
+    //{
+    //    // for e.g. P@ssw0rd
+    //    options.Password.RequiredLength = 8;
+    //    options.Password.RequireNonAlphanumeric = true; // for e.g. !"£$%^
+    //    options.Password.RequireDigit = true;
+    //    options.Password.RequireLowercase = true;
+    //    options.Password.RequireUppercase = true;
+
+    //}).AddEntityFrameworkStores<ShareMemoriesContext>()
+    //    .AddDefaultTokenProviders();
+
+    /*************************************************************************
+    *                             Add Authorization                          *
+    **************************************************************************/    
+    builder.Services.AddAuthorization();
+
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
@@ -76,7 +134,7 @@ try
     /*************************************************************************
     *                               Add Identity                             *
     **************************************************************************/
-    // app.MapIdentityApi<IdentityUser>();
+    app.MapIdentityApi<IdentityUser>();
 
     /*************************************************************************
     *                         Use Output Caching                             *
@@ -104,11 +162,10 @@ try
     //new BooksAPIs(app).RegisterBooksAPI();
     //new LoginRegisterAPIs(app).RegisterLoginAPI();
 
-    
-
+    // Test authentication API
+    app.MapGet("/test", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}").RequireAuthorization();
 
     app.Run();
-
 }
 catch (Exception exception)
 {
