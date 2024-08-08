@@ -6,13 +6,18 @@ namespace ShareMemories.Endpoints.User
     {
         public static void RegisterUserEndpoints(this IEndpointRouteBuilder routes)
         {
-            var users = routes.MapGroup("/api/v1/users");
+            //var users = routes.MapGroup("/api/v1/users");
 
-            users.MapGet("", () => Collections.Users)
+            var group = routes.MapGroup("users")
+                .WithOpenApi()
+                //.RequireAuthorization()
+                ;
+
+            group.MapGet("", () => Collections.Users)
             .WithName("GetAllUsers")
                  .Produces<List<ShareMemories.Domain.Entities.User>>(StatusCodes.Status200OK);
 
-            users.MapGet("/{id:int}", (int id) =>
+            group.MapGet("/{id:int}", (int id) =>
             {
                 var user = Collections.Users.FirstOrDefault(user => user.Id == id);
                 return user is not null ? Results.Ok(user) : Results.NotFound();
@@ -21,7 +26,7 @@ namespace ShareMemories.Endpoints.User
             .Produces< ShareMemories.Domain.Entities.User >(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
-            users.MapPost("", (ShareMemories.Domain.Entities.User user) =>
+            group.MapPost("", (ShareMemories.Domain.Entities.User user) =>
             {
                 Collections.Users.Add(user);
                 return Results.Created($"/api/v1/users/{user.Id}", user);
@@ -29,7 +34,7 @@ namespace ShareMemories.Endpoints.User
             .WithName("CreateUser")
             .Produces<ShareMemories.Domain.Entities.User>(StatusCodes.Status201Created);
 
-            users.MapPut("/{id:int}", (int id, ShareMemories.Domain.Entities.User updatedUser) =>
+            group.MapPut("/{id:int}", (int id, ShareMemories.Domain.Entities.User updatedUser) =>
             {
                 var currentUser = Collections.Users.FirstOrDefault(user => user.Id == id);
                 if (currentUser is null) return Results.NotFound();
@@ -44,7 +49,7 @@ namespace ShareMemories.Endpoints.User
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound);
 
-            users.MapDelete("/{id:int}", (int id) =>
+            group.MapDelete("/{id:int}", (int id) =>
             {
                 var userForDeletion = Collections.Users.FirstOrDefault(user => user.Id == id);
                 if (userForDeletion is null) return Results.NotFound();

@@ -1,11 +1,16 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.MinimalAPIs;
 using ShareMemories.API.Endpoints.Picture;
 using ShareMemories.API.Endpoints.Video;
 using ShareMemories.API.Endpoints.Weather;
 using ShareMemories.API.Extensions;
+using ShareMemories.Application.Interfaces;
+using ShareMemories.Application.InternalServices;
 using ShareMemories.Infrastructure.Database;
+using ShareMemories.Infrastructure.Interfaces;
+using ShareMemories.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +18,6 @@ var logger = NLog.Web.NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLo
 
 try
 {
-
     /*************************************************************************
     * Associate a Global Error handler middleware for your end-points        *
     **************************************************************************/
@@ -34,18 +38,19 @@ try
     **************************************************************************/
     //builder.Services.AddTransient<IDistributedService, SqlServerDistributedService>(); // DI service class
     //builder.Services.AddDbContext<SqlServerEmployeeDatabaseContext>(); // DI database context
+    builder.Services.AddScoped<IPictureService, PictureService>();
+    //builder.Services.AddScoped<IAuthService, AuthService>();
+
 
     var app = builder.Build();
 
     /*************************************************************************
     *                       Register Minimal APIEndpoints                    *
     **************************************************************************/
-    app.MapWeatherEndpoints(); // add custom endpoints
+    app.MapWeatherEndpoints();
     app.MapPictureEndpoints();
     app.MapVideoEndpoints();
-
-
-
+    //app.MapAuthEndpoints();
 
     /*************************************************************************
     *                 Custom ProblemDetails Error Handler                    *
