@@ -1,7 +1,4 @@
-﻿using ShareMemories.API.Models;
-using System.ComponentModel.Design;
-
-namespace ShareMemories.API.Endpoints.Weather
+﻿namespace ShareMemories.API.Endpoints.Weather
 {
 
     public static class WeatherEndpoints

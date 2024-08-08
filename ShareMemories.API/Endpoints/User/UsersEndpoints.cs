@@ -1,4 +1,5 @@
-﻿
+﻿using ShareMemories.Domain.Entities;
+
 namespace ShareMemories.Endpoints.User
 {
     public static class UsersEndpoints
@@ -9,7 +10,7 @@ namespace ShareMemories.Endpoints.User
 
             users.MapGet("", () => Collections.Users)
             .WithName("GetAllUsers")
-                 .Produces<List<ShareMemories.API.Models.User>>(StatusCodes.Status200OK);
+                 .Produces<List<ShareMemories.Domain.Entities.User>>(StatusCodes.Status200OK);
 
             users.MapGet("/{id:int}", (int id) =>
             {
@@ -17,24 +18,24 @@ namespace ShareMemories.Endpoints.User
                 return user is not null ? Results.Ok(user) : Results.NotFound();
             })
             .WithName("GetUserById")
-            .Produces<ShareMemories.API.Models.User>(StatusCodes.Status200OK)
+            .Produces< ShareMemories.Domain.Entities.User >(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
-            users.MapPost("", (ShareMemories.API.Models.User user) =>
+            users.MapPost("", (ShareMemories.Domain.Entities.User user) =>
             {
                 Collections.Users.Add(user);
                 return Results.Created($"/api/v1/users/{user.Id}", user);
             })
             .WithName("CreateUser")
-            .Produces<ShareMemories.API.Models.User>(StatusCodes.Status201Created);
+            .Produces<ShareMemories.Domain.Entities.User>(StatusCodes.Status201Created);
 
-            users.MapPut("/{id:int}", (int id, ShareMemories.API.Models.User updatedUser) =>
+            users.MapPut("/{id:int}", (int id, ShareMemories.Domain.Entities.User updatedUser) =>
             {
                 var currentUser = Collections.Users.FirstOrDefault(user => user.Id == id);
                 if (currentUser is null) return Results.NotFound();
 
-                currentUser.FirstName = updatedUser.FirstName;
-                currentUser.LastName = updatedUser.LastName;
+                currentUser.Firstname = updatedUser.Firstname;
+                currentUser.Lastname = updatedUser.Lastname;
                 currentUser.BirthDate = updatedUser.BirthDate;
 
                 return Results.NoContent();
@@ -59,6 +60,6 @@ namespace ShareMemories.Endpoints.User
 
     public static class Collections
     {
-        public static List<API.Models.User> Users { get; set; } = new List<API.Models.User>();
+        public static List<ShareMemories.Domain.Entities.User> Users { get; set; } = new List<ShareMemories.Domain.Entities.User>();
     }
 }

@@ -22,6 +22,7 @@ public partial class User
     public DateTime? LastUpdated { get; set; }
 
     public DateTime? CreatedDate { get; set; }
+    public DateTime BirthDate { get; set; }
 
     public bool? IsArchived { get; set; }
 
