@@ -1,12 +1,9 @@
 ﻿using Ardalis.GuardClauses;
-using BLPIT.Controller.Validators;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.OpenApi.Models;
+using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
-using ShareMemories.Domain.DTOs;
-using ShareMemories.Domain.Models;
-using ShareMemories.Infrastructure.Interfaces;
 
 namespace ShareMemories.API.Endpoints.Picture
 {
@@ -14,9 +11,6 @@ namespace ShareMemories.API.Endpoints.Picture
     {
         public static void MapPictureEndpoints(this IEndpointRouteBuilder routes)
         {
-            // IPictureService
-
-
             var group = routes.MapGroup("pictures")
               .WithOpenApi()
               //.RequireAuthorization()
@@ -48,14 +42,7 @@ namespace ShareMemories.API.Endpoints.Picture
 
             group.MapPost("/InsertPictureAsync", async (HttpContext context, ShareMemories.Domain.Entities.Picture picture, IPictureService pictureService) =>
             {
-                //// Parse the request body into a Picture object
-                //var pictures = await context.Request.ReadFromJsonAsync<ShareMemories.Domain.Entities.Picture>();
-
-                //if (picture == null)
-                //{
-                //    return Results.BadRequest("Invalid picture data.");
-                //}
-
+                // DTO validated before this line, using "PictureValidator"
                 var insertedPicture = await pictureService.InsertPictureAsync(picture);
 
                 // Return 200 OK with the inserted picture or 404 Not Found if insertion fails
@@ -71,8 +58,8 @@ namespace ShareMemories.API.Endpoints.Picture
                Description = "Adds a new picture to database",
                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Insert API Library" } }
            })
-           .CacheOutput(x => x.Tag("PictureById"));
-           //.AddEndpointFilter<GenericValidationFilter<LoginUser>>(); // apply fluent validation to DTO model from client and pass back broken rules    
+           .CacheOutput(x => x.Tag("PictureById"))
+           .AddEndpointFilter<GenericValidationFilter<PictureValidator, ShareMemories.Domain.Entities.Picture>>(); // apply fluent validation to DTO model from client and pass back broken rules    
 
 
             group.MapGet("/GetAllUserPicturesByUserId", () =>

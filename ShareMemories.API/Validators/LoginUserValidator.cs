@@ -3,7 +3,7 @@ using ShareMemories.Domain.DTOs;
 using System;
 using System.Text.RegularExpressions;
 
-namespace BLPIT.Controller.Validators
+namespace ShareMemories.API.Validators
 {
     public class LoginUserValidator : AbstractValidator<LoginUser>
     {

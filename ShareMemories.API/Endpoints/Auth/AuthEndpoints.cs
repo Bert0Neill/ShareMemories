@@ -1,10 +1,6 @@
-﻿using Ardalis.GuardClauses;
-using BLPIT.Controller.Validators;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using ShareMemories.Domain.DTOs;
-using ShareMemories.Domain.Models;
-using ShareMemories.Endpoints.User;
 using ShareMemories.Infrastructure.Interfaces;
 using System.Text;
 

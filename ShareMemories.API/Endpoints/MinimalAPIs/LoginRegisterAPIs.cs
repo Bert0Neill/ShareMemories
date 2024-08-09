@@ -1,17 +1,12 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Ardalis.GuardClauses;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
-using System;
-using System.Collections.Generic;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Text;
-using Ardalis.GuardClauses;
-using ShareMemories.Infrastructure.Interfaces;
+using ShareMemories.API.Validators;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Models;
-using BLPIT.Controller.Validators;
+using ShareMemories.Infrastructure.Interfaces;
+using System.Text;
 
 namespace ShareMemories.API.Endpoints.MinimalAPIs
 {

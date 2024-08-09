@@ -1,32 +1,37 @@
-﻿using FluentValidation;
-
-namespace BLPIT.Controller.Validators
+﻿namespace ShareMemories.API.Validators
 {
-    public class GenericValidationFilter<T> : IEndpointFilter
+    using FluentValidation;
+    using Microsoft.AspNetCore.Http;
+    using System.Threading.Tasks;
+
+    public class GenericValidationFilter<TValidator, TModel> : IEndpointFilter
+        where TValidator : IValidator<TModel>
     {
-        public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext ctx, EndpointFilterDelegate next)
+        private readonly TValidator _validator;
+
+        public GenericValidationFilter(TValidator validator)
         {
-            var validator = ctx.HttpContext.RequestServices.GetService<IValidator<T>>();
-            if (validator is not null)
+            _validator = validator;
+        }
+
+        public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+        {
+            var model = context.Arguments.OfType<TModel>().FirstOrDefault();
+
+            if (model == null)
             {
-                var entity = ctx.Arguments
-                  .OfType<T>()
-                  .FirstOrDefault(a => a?.GetType() == typeof(T));
-                if (entity is not null)
-                {
-                    var validation = await validator.ValidateAsync(entity);
-                    if (validation.IsValid)
-                    {
-                        return await next(ctx);
-                    }
-                    return Results.ValidationProblem(validation.ToDictionary()); // return rules to client that didn't pass
-                }
-                else
-                {
-                    return Results.Problem("Could not find type to validate");
-                }
+                return Results.BadRequest("Invalid model.");
             }
-            return await next(ctx);
+
+            var validationResult = await _validator.ValidateAsync(model);
+
+            if (!validationResult.IsValid)
+            {
+                return Results.BadRequest(validationResult.Errors);
+            }
+
+            return await next(context);
         }
     }
+
 }

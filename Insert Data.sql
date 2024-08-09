@@ -1,14 +1,6 @@
--- Insert mock data into [dbo].[User] table
-INSERT INTO [dbo].[User] (Username, Firstname, Lastname, Email, Password, LastUpdated, CreatedDate, IsArchived)
-VALUES
-('john_doe', 'John', 'Doe', 'john.doe@example.com', 'hashed_password_123', null, null, 0),
-('jane_smith', 'Jane', 'Smith', 'jane.smith@example.com', 'hashed_password_456', null, null, 0),
-('alice_jones', 'Alice', 'Jones', 'alice.jones@example.com', 'hashed_password_789', GETDATE(), GETDATE(), 0),
-('bob_brown', 'Bob', 'Brown', 'bob.brown@example.com', 'hashed_password_012', GETDATE(), GETDATE(), 0);
-
 -- Insert mock data into [dbo].[Friendship] table
 -- Use the User IDs inserted above
-INSERT INTO [dbo].[Friendship] (UserId, FriendsWithId, IsArchived)
+INSERT INTO [dbo].[Friendships] (UserId, FriendsWithId, IsArchived)
 VALUES
 (1, 2, 0), -- John Doe is friends with Jane Smith
 (2, 1, 0), -- Jane Smith is friends with John Doe (bi-directional friendship)

@@ -1,4 +1,5 @@
 using Ardalis.GuardClauses;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -11,6 +12,7 @@ using ShareMemories.API.Endpoints.Picture;
 using ShareMemories.API.Endpoints.Video;
 using ShareMemories.API.Endpoints.Weather;
 using ShareMemories.API.Extensions;
+using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
 using ShareMemories.Domain.Models;
@@ -32,6 +34,13 @@ try
     **************************************************************************/
     builder.Services.AddProblemDetails(); // add ProblemDetails handler - consistent error response
     builder.Services.AddExceptionHandler<ExceptionToProblemDetailsHandler>(); // notify services of your custom error handling, by using "app.UseExceptionHandler()" you are telling the system to use it
+
+    /**********************************************************************************
+     * Add DTO model validation - Minimal API doesn't do Model.Validation like MVC
+     **********************************************************************************/
+    builder.Services.AddValidatorsFromAssemblyContaining(typeof(PictureValidator));
+    builder.Services.AddValidatorsFromAssemblyContaining(typeof(LoginUserValidator));
+
 
     /*************************************************************************
     *           Register DbContext and provide ConnectionString              *
