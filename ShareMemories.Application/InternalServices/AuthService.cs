@@ -45,7 +45,8 @@ namespace ShareMemories.Infrastructure.Services
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                DateOfBirth = user.DateOfBirth
+                DateOfBirth = user.DateOfBirth,
+                LastUpdated = DateTime.Now
             };
 
             var result = await _userManager.CreateAsync(identityUser, user.Password);
@@ -85,6 +86,8 @@ namespace ShareMemories.Infrastructure.Services
 
             identityUser.RefreshToken = response.RefreshToken;
             identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(1); // default to 1 day
+            identityUser.LastUpdated = DateTime.Now;
+            
             await _userManager.UpdateAsync(identityUser);
 
             return response;
