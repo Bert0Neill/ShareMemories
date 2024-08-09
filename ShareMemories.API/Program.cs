@@ -14,6 +14,7 @@ using ShareMemories.Domain.Entities;
 using ShareMemories.Infrastructure.Database;
 using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
 using ShareMemories.Infrastructure.Interfaces;
+using ShareMemories.Infrastructure.Services;
 using System.Security.Claims;
 using System.Text;
 
@@ -40,14 +41,14 @@ try
     *           Register DbContext and provide ConnectionString              *
     **************************************************************************/
     builder.Services.AddDbContext<ShareMemoriesContext>(db => db.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Singleton);
-    
+
     /*************************************************************************
     *                       Dependency Injection                             *
     **************************************************************************/
     //builder.Services.AddTransient<IDistributedService, SqlServerDistributedService>(); // DI service class
     builder.Services.AddScoped<IPictureService, PictureService>();
     builder.Services.AddScoped<IPictureRepository, PictureRepository>();
-    //builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IAuthService, AuthService>();
 
     /*************************************************************************
      *   Response output caching (duration) policies - default is 5 seconds  *
@@ -64,11 +65,11 @@ try
     **************************************************************************/
     builder.Services.AddOutputCache();
 
-    /*************************************************************************
-    *       Register Identity Endpoints (Register\login\Refresh etc.)        *
-    **************************************************************************/
+    /********************************************************************************
+    * Register EXTENDED ExtendIdentityUser Endpoints (Register\login\Refresh etc.)  *
+    *********************************************************************************/
     builder.Services
-        .AddIdentityApiEndpoints<IdentityUser>()
+        .AddIdentityApiEndpoints<ExtendIdentityUser>()
         .AddEntityFrameworkStores<ShareMemoriesContext>()
         .AddApiEndpoints();
 
@@ -126,7 +127,7 @@ try
     **************************************************************************/
     app.MapPictureEndpoints();
     app.MapVideoEndpoints();
-    //app.MapAuthEndpoints();
+    app.MapAuthEndpoints();
 
     /*************************************************************************
     *                 Custom ProblemDetails Error Handler                    *
@@ -137,7 +138,8 @@ try
     /*************************************************************************
     *                               Add Identity                             *
     **************************************************************************/
-    app.MapIdentityApi<IdentityUser>();
+    //app.MapIdentityApi<IdentityUser>();
+    //app.MapIdentityApi<ExtendIdentityUser>();
 
     /*************************************************************************
     *                         Use Output Caching                             *

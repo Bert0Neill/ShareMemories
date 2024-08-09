@@ -7,7 +7,7 @@ namespace ShareMemories.Domain.Entities
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public DateTime DateOfBirth { get; set; }
+        public DateOnly DateOfBirth { get; set; }
         public bool? IsArchived { get; set; } = false;
         public DateTime? LastUpdated { get; set; }
         public DateTime? CreatedDate { get; set; } = DateTime.Now;

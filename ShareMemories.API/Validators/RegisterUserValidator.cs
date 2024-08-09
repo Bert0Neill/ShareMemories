@@ -24,7 +24,7 @@ namespace ShareMemories.API.Validators
                .NotEmpty()
                .WithMessage("First name must be >= 1 and <= 100 characters");
 
-            RuleFor(p => p.SecondName)
+            RuleFor(p => p.LastName)
                .MinimumLength(1)
                .MaximumLength(100)
                .NotEmpty()

@@ -9,7 +9,7 @@ namespace ShareMemories.Infrastructure.Interfaces
     {
         Task<LoginResponseDto> LoginAsync(LoginUserDto user);
         Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenModel model);
-        Task<IEnumerable<IdentityError>> RegisterUserAsync(RegisterUserDto user);
+        Task<IdentityResult> RegisterUserAsync(RegisterUserDto user);
 
     }
 }

@@ -26,16 +26,20 @@ namespace ShareMemories.Infrastructure.Services
         }
 
         #region APIs
-        public async Task<IEnumerable<IdentityError>> RegisterUserAsync(RegisterUserDto user)
+        public async Task<IdentityResult> RegisterUserAsync(RegisterUserDto user)
         {
             var identityUser = new ExtendIdentityUser
             {
                 UserName = user.UserName,
-                Email = user.Email
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                DateOfBirth = user.DateOfBirth
+
             };
 
             var result = await _userManager.CreateAsync(identityUser, user.Password);
-            return result.Errors;
+            return result;
         }
 
         public async Task<LoginResponseDto> LoginAsync(LoginUserDto user)

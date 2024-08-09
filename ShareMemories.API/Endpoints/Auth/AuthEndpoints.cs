@@ -23,12 +23,12 @@ namespace ShareMemories.API.Endpoints.Auth
              *******************************************************************************************************/
             group.MapPost("/RegisterAsync", async (RegisterUserDto user, IAuthService authService) =>
             {
-                IEnumerable<IdentityError> result = await authService.RegisterUserAsync(user);
+                var result = await authService.RegisterUserAsync(user);
 
-                if (result.Any())
+                if (result.Errors.Any())
                 {
                     var errors = new StringBuilder();
-                    result.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
                     return Results.BadRequest(errors.ToString());
                 }
 
@@ -47,54 +47,54 @@ namespace ShareMemories.API.Endpoints.Auth
             .AddEndpointFilter<GenericValidationFilter<RegisterUserValidator, RegisterUserDto>>(); // apply fluent validation to DTO model from client and pass back broken rules    
             
 
-            /*******************************************************************************************************
-             * Login an already registered user
-             *******************************************************************************************************/
-            group.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService) =>
-            {
-                var loginResult = await authService.LoginAsync(user);
+            ///*******************************************************************************************************
+            // * Login an already registered user
+            // *******************************************************************************************************/
+            //group.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService) =>
+            //{
+            //    var loginResult = await authService.LoginAsync(user);
 
-                if (loginResult.IsLoggedIn) 
-                {
-                    return Results.Ok(loginResult);
-                }
+            //    if (loginResult.IsLoggedIn) 
+            //    {
+            //        return Results.Ok(loginResult);
+            //    }
 
-                return Results.BadRequest("User credentials could not be verified.");
-            })
-            .WithName("LoginAsync")
-            .WithOpenApi(x => new OpenApiOperation(x)
-            {
-                Summary = "Login",
-                Description = "Logs in the user and returns a JWT token if successful.",
-                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
-            })
-            .CacheOutput(x => x.Tag("LoginUser"))
-            .AddEndpointFilter<GenericValidationFilter<LoginUserValidator, LoginUserDto>>(); // apply fluent validation to DTO model from client and pass back broken rules    
+            //    return Results.BadRequest("User credentials could not be verified.");
+            //})
+            //.WithName("LoginAsync")
+            //.WithOpenApi(x => new OpenApiOperation(x)
+            //{
+            //    Summary = "Login",
+            //    Description = "Logs in the user and returns a JWT token if successful.",
+            //    Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            //})
+            //.CacheOutput(x => x.Tag("LoginUser"))
+            //.AddEndpointFilter<GenericValidationFilter<LoginUserValidator, LoginUserDto>>(); // apply fluent validation to DTO model from client and pass back broken rules    
 
-            /*******************************************************************************************************
-            * Refresh a user's login instance, without having to pass the credentials again
-            *******************************************************************************************************/
-            group.MapPost("/RefreshTokenAsync", async (RefreshTokenModel refreshModel, IAuthService authService) =>
-            {
-                // apply guard rules to individual property's - could also use FluentValidator!
-                Guard.Against.Empty(refreshModel.JwtToken, nameof(refreshModel.JwtToken), "JWT must not be supplied");
-                Guard.Against.Empty(refreshModel.RefreshToken, nameof(refreshModel.RefreshToken), "Refresh token must not be supplied");
+            ///*******************************************************************************************************
+            //* Refresh a user's login instance, without having to pass the credentials again
+            //*******************************************************************************************************/
+            //group.MapPost("/RefreshTokenAsync", async (RefreshTokenModel refreshModel, IAuthService authService) =>
+            //{
+            //    // apply guard rules to individual property's - could also use FluentValidator!
+            //    Guard.Against.Empty(refreshModel.JwtToken, nameof(refreshModel.JwtToken), "JWT must not be supplied");
+            //    Guard.Against.Empty(refreshModel.RefreshToken, nameof(refreshModel.RefreshToken), "Refresh token must not be supplied");
 
-                var loginResult = await authService.RefreshTokenAsync(refreshModel);
+            //    var loginResult = await authService.RefreshTokenAsync(refreshModel);
 
-                if (loginResult.IsLoggedIn)
-                {
-                    return Results.Ok(loginResult);
-                }
-                return Results.Unauthorized();
-            })
-            .WithName("RefreshTokenAsync")
-            .WithOpenApi(x => new OpenApiOperation(x)
-            {
-                Summary = "Refresh Token",
-                Description = "Using refresh & JWT token, you can request to be logged back in again, without having to supply credentials.",
-                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
-            });
+            //    if (loginResult.IsLoggedIn)
+            //    {
+            //        return Results.Ok(loginResult);
+            //    }
+            //    return Results.Unauthorized();
+            //})
+            //.WithName("RefreshTokenAsync")
+            //.WithOpenApi(x => new OpenApiOperation(x)
+            //{
+            //    Summary = "Refresh Token",
+            //    Description = "Using refresh & JWT token, you can request to be logged back in again, without having to supply credentials.",
+            //    Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            //});
 
         }
     }
