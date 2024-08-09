@@ -1,15 +1,4 @@
-﻿//using Microsoft.AspNet.Identity;
-//using Microsoft.AspNetCore.Identity;
-//using Microsoft.IdentityModel.Tokens;
-//using ShareMemories.Domain.DTOs;
-//using ShareMemories.Domain.Models;
-//using ShareMemories.Infrastructure.Interfaces;
-//using System.IdentityModel.Tokens.Jwt;
-//using System.Security.Claims;
-//using System.Security.Cryptography;
-//using System.Text;
-
-using ShareMemories.Domain.DTOs;
+﻿using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -19,6 +8,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using ShareMemories.Domain.Entities;
 
 namespace ShareMemories.Infrastructure.Services
 {
@@ -26,10 +16,10 @@ namespace ShareMemories.Infrastructure.Services
     public class AuthService : IAuthService
     {
         // class variables
-        private readonly UserManager<ExtendedIdentityUser> _userManager;
+        private readonly UserManager<ExtendIdentityUser> _userManager;
         private readonly IConfiguration _config;
 
-        public AuthService(UserManager<ExtendedIdentityUser> userManager, IConfiguration config)
+        public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config)
         {
             _userManager = userManager;
             _config = config;
@@ -38,7 +28,7 @@ namespace ShareMemories.Infrastructure.Services
         #region APIs
         public async Task<IEnumerable<IdentityError>> RegisterUserAsync(LoginUser user)
         {
-            var identityUser = new ExtendedIdentityUser
+            var identityUser = new ExtendIdentityUser
             {
                 UserName = user.UserName,
                 Email = user.UserName

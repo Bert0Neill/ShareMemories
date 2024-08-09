@@ -19,5 +19,4 @@ public partial class Video
 
     public bool? IsArchived { get; set; }
 
-    public virtual User User { get; set; }
 }

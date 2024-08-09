@@ -4,8 +4,8 @@ namespace ShareMemories.Application.Interfaces
 {
     public interface IPictureService
     {
-        Task<Picture> GetPictureAsync(int id);
+        Task<Picture> GetPictureByIdAsync(int id);
         List<Picture> GetPictures();
-        Task<Picture> InsertPictureAsync(Picture picture);
+        Task<Picture> InsertPictureAsync(Picture picture);        
     }
 }

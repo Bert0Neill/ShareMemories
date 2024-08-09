@@ -26,8 +26,7 @@ namespace ShareMemories.Application.InternalServices
                 UserId = 101,
                 FriendlyName = "Sunset",
                 Picture1 = new byte[] { 0x01, 0x02, 0x03 }, // Example byte array
-                IsArchived = false,
-                User = new User { Id = 101, Username = "John Doe" } // Assuming User class exists
+                IsArchived = false
             };
 
             var picture2 = new Picture
@@ -36,8 +35,7 @@ namespace ShareMemories.Application.InternalServices
                 UserId = 102,
                 FriendlyName = "Mountain",
                 Picture1 = new byte[] { 0x04, 0x05, 0x06 }, // Example byte array
-                IsArchived = true,
-                User = new User { Id = 102, Username = "Jane Smith" } // Assuming User class exists
+                IsArchived = true
             };
 
             // Add Picture instances to the list
@@ -56,7 +54,7 @@ namespace ShareMemories.Application.InternalServices
             return this._pictures;
         }
 
-        public async Task<Picture> GetPictureAsync(int id)
+        public async Task<Picture> GetPictureByIdAsync(int id)
         {
             var picture = await _pictureRepository.RetrievePictureByIdAsync(id);
             return picture;

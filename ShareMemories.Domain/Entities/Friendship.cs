@@ -15,7 +15,5 @@ public partial class Friendship
 
     public bool? IsArchived { get; set; }
 
-    public virtual User FriendsWith { get; set; }
 
-    public virtual User User { get; set; }
 }

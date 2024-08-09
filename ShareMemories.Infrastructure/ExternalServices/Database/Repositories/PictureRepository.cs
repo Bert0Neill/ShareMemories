@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using ShareMemories.Domain.Entities;
+using ShareMemories.Infrastructure.Database;
 using ShareMemories.Infrastructure.Interfaces;
 using System.Text.Json;
 
-namespace ShareMemories.Infrastructure.Database
+namespace ShareMemories.Infrastructure.ExternalServices.Database.Repositories
 {
     public class PictureRepository : IPictureRepository
     {
@@ -59,7 +60,7 @@ namespace ShareMemories.Infrastructure.Database
 
             _musicDbContext.Update(album);
             await _musicDbContext.SaveChangesAsync();
-            
+
             return album;
         }
     }

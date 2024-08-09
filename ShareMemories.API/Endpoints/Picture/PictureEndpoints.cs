@@ -29,7 +29,7 @@ namespace ShareMemories.API.Endpoints.Picture
                 Guard.Against.Null(id, nameof(id), "Id must not be Null");
                 Guard.Against.NegativeOrZero(id, nameof(id), "Id must be greater than zero");
 
-                return await pictureService.GetPictureAsync(id) is { } picture // pattern matching expression. Checking if bookService.GetBook(id) matches the pattern { } and assigns it to a variable named book.
+                return await pictureService.GetPictureByIdAsync(id) is { } picture // pattern matching expression. Checking if bookService.GetBook(id) matches the pattern { } and assigns it to a variable named book.
                 //return pictureService.GetPicture(id) is { } picture // pattern matching expression. Checking if bookService.GetBook(id) matches the pattern { } and assigns it to a variable named book.
                         ? TypedResults.Ok(picture) // return Book if non-null value
                         : TypedResults.NotFound(); // if Null, return NotFound

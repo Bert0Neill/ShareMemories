@@ -15,6 +15,7 @@ using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
 using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Database;
+using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
 using System.Security.Claims;

@@ -17,5 +17,4 @@ public partial class Picture
 
     public bool? IsArchived { get; set; }
 
-    public virtual User User { get; set; }
 }
