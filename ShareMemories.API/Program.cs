@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.Picture;
@@ -36,19 +37,25 @@ try
     builder.Services.AddValidatorsFromAssemblyContaining(typeof(PictureValidator));
     builder.Services.AddValidatorsFromAssemblyContaining(typeof(LoginUserValidator));
 
-
     /*************************************************************************
     *           Register DbContext and provide ConnectionString              *
     **************************************************************************/
     builder.Services.AddDbContext<ShareMemoriesContext>(db => db.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Singleton);
 
+    /********************************************************************************
+    * Register EXTENDED ExtendIdentityUser Endpoints (Register\login\Refresh etc.)  *
+    *********************************************************************************/
+    //builder.Services
+    //    .AddIdentityApiEndpoints<ExtendIdentityUser>()
+    //    .AddEntityFrameworkStores<ShareMemoriesContext>()
+    //    .AddApiEndpoints();
+
     /*************************************************************************
     *                       Dependency Injection                             *
     **************************************************************************/
-    //builder.Services.AddTransient<IDistributedService, SqlServerDistributedService>(); // DI service class
-    builder.Services.AddScoped<IPictureService, PictureService>();
-    builder.Services.AddScoped<IPictureRepository, PictureRepository>();
-    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IPictureService, PictureService>();          // Application
+    builder.Services.AddScoped<IAuthService, AuthService>();                // Application
+    builder.Services.AddScoped<IPictureRepository, PictureRepository>();    // Infrastructure
 
     /*************************************************************************
      *   Response output caching (duration) policies - default is 5 seconds  *
@@ -64,14 +71,6 @@ try
     *                           Register Response Caching                   *
     **************************************************************************/
     builder.Services.AddOutputCache();
-
-    /********************************************************************************
-    * Register EXTENDED ExtendIdentityUser Endpoints (Register\login\Refresh etc.)  *
-    *********************************************************************************/
-    builder.Services
-        .AddIdentityApiEndpoints<ExtendIdentityUser>()
-        .AddEntityFrameworkStores<ShareMemoriesContext>()
-        .AddApiEndpoints();
 
     /*************************************************************************
     *                       Add Bearer JWT Authentication                    *
@@ -96,20 +95,23 @@ try
         };
     });
 
-    ///*************************************************************************
-    //*                           Add Password strength                        *
-    //**************************************************************************/
-    //builder.Services.AddIdentity<ExtendIdentityUser, IdentityRole>(options =>
-    //{
-    //    // for e.g. P@ssw0rd
-    //    options.Password.RequiredLength = 8;
-    //    options.Password.RequireNonAlphanumeric = true; // for e.g. !"£$%^
-    //    options.Password.RequireDigit = true;
-    //    options.Password.RequireLowercase = true;
-    //    options.Password.RequireUppercase = true;
+    /********************************************************************************
+    *                           Add Password strength                               *
+    *                                      &                                        *
+    * Register EXTENDED ExtendIdentityUser Endpoints (Register\login\Refresh etc.)  *
+    *********************************************************************************/
+    builder.Services.AddIdentity<ExtendIdentityUser, IdentityRole>(options =>
+    {
+        // for e.g. P@ssw0rd
+        options.Password.RequiredLength = 8;
+        options.Password.RequireNonAlphanumeric = true; // for e.g. !"£$%^
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
 
-    //}).AddEntityFrameworkStores<ShareMemoriesContext>()
-    //    .AddDefaultTokenProviders();
+    })  .AddEntityFrameworkStores<ShareMemoriesContext>()
+        .AddApiEndpoints()
+        .AddDefaultTokenProviders();
 
     /*************************************************************************
     *               Add Authorization & Authentication                       *
@@ -128,18 +130,6 @@ try
     app.MapPictureEndpoints();
     app.MapVideoEndpoints();
     app.MapAuthEndpoints();
-
-    /*************************************************************************
-    *                 Custom ProblemDetails Error Handler                    *
-    **************************************************************************/
-    //app.UseExceptionHandler(); // apply custom error handler, comment out if you want to see full stack trace
-
-
-    /*************************************************************************
-    *                               Add Identity                             *
-    **************************************************************************/
-    //app.MapIdentityApi<IdentityUser>();
-    //app.MapIdentityApi<ExtendIdentityUser>();
 
     /*************************************************************************
     *                         Use Output Caching                             *
