@@ -80,7 +80,7 @@ namespace ShareMemories.API.Endpoints.MinimalAPIs
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register API Library" } }
             })
             .CacheOutput(x => x.Tag("LoginUser"))
-            .AddEndpointFilter<GenericValidationFilter<LoginUser>>(); // apply fluent validation to DTO model from client and pass back broken rules    
+            .AddEndpointFilter<GenericValidationFilter<LoginUserValidator,LoginUser>>(); // apply fluent validation to DTO model from client and pass back broken rules    
 
             /*******************************************************************************************************
             * Refresh a user's login instance, without having to pass the credentials again

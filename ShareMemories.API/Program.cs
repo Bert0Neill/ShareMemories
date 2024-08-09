@@ -15,6 +15,7 @@ using ShareMemories.API.Extensions;
 using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
+using ShareMemories.Domain.Entities;
 using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Database;
 using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
@@ -105,7 +106,7 @@ try
     ///*************************************************************************
     //*                           Add Password strength                        *
     //**************************************************************************/
-    //builder.Services.AddIdentity<ExtendedIdentityUser, IdentityRole>(options =>
+    //builder.Services.AddIdentity<ExtendIdentityUser, IdentityRole>(options =>
     //{
     //    // for e.g. P@ssw0rd
     //    options.Password.RequiredLength = 8;
@@ -119,7 +120,7 @@ try
 
     /*************************************************************************
     *                             Add Authorization                          *
-    **************************************************************************/    
+    **************************************************************************/
     builder.Services.AddAuthorization();
 
 
