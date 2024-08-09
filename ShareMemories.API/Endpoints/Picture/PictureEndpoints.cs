@@ -24,7 +24,6 @@ namespace ShareMemories.API.Endpoints.Picture
                 Guard.Against.NegativeOrZero(id, nameof(id), "Id must be greater than zero");
 
                 return await pictureService.GetPictureByIdAsync(id) is { } picture // pattern matching expression. Checking if bookService.GetBook(id) matches the pattern { } and assigns it to a variable named book.
-                //return pictureService.GetPicture(id) is { } picture // pattern matching expression. Checking if bookService.GetBook(id) matches the pattern { } and assigns it to a variable named book.
                         ? TypedResults.Ok(picture) // return Book if non-null value
                         : TypedResults.NotFound(); // if Null, return NotFound
             })
@@ -34,9 +33,8 @@ namespace ShareMemories.API.Endpoints.Picture
               {
                   Summary = "Get Picture By Id",
                   Description = "Returns information about a selected picture from the user's library.",
-                  Tags = new List<OpenApiTag> { new() { Name = "SharedMemories API Library" } }
+                  Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
               })
-              //.CacheOutput(x => x.SetVaryByQuery("id")); // cache by parameter used (NB looks to be the default)
               .CacheOutput(x => x.Tag("PictureById")); // invalidate data when new record added, by using tag in Post API    
 
 
@@ -56,7 +54,7 @@ namespace ShareMemories.API.Endpoints.Picture
            {
                Summary = "Insert",
                Description = "Adds a new picture to database",
-               Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Insert API Library" } }
+               Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
            })
            .CacheOutput(x => x.Tag("PictureById"))
            .AddEndpointFilter<GenericValidationFilter<PictureValidator, ShareMemories.Domain.Entities.Picture>>(); // apply fluent validation to DTO model from client and pass back broken rules    
@@ -67,14 +65,24 @@ namespace ShareMemories.API.Endpoints.Picture
                 return "AllUserPicturesByUserId Data...";
             })
             .WithName("RetrieveAllUserPicturesByUserId")
-            .WithOpenApi();
+             .WithOpenApi(x => new OpenApiOperation(x)
+             {
+                 Summary = "Get Picture By Id",
+                 Description = "Returns information about a selected picture from the user's library.",
+                 Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
+             });
 
             group.MapPost("/SharePictureById", () =>
             {
                 return "SharePictureByIdData...";
             })
             .WithName("SharePictureById")
-            .WithOpenApi();
+             .WithOpenApi(x => new OpenApiOperation(x)
+             {
+                 Summary = "Get Picture By Id",
+                 Description = "Returns information about a selected picture from the user's library.",
+                 Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
+             });
         }
     }
 }

@@ -2,11 +2,13 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ShareMemories.Domain.Entities;
 
 public partial class Picture
 {
+    [Key]
     public int Id { get; set; }
 
     public int UserId { get; set; }

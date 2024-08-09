@@ -26,32 +26,35 @@ namespace ShareMemories.Infrastructure.Services
         }
 
         #region APIs
-        public async Task<IEnumerable<IdentityError>> RegisterUserAsync(LoginUser user)
+        public async Task<IEnumerable<IdentityError>> RegisterUserAsync(RegisterUserDto user)
         {
             var identityUser = new ExtendIdentityUser
             {
                 UserName = user.UserName,
-                Email = user.UserName
+                Email = user.Email
             };
 
             var result = await _userManager.CreateAsync(identityUser, user.Password);
             return result.Errors;
         }
 
-        public async Task<LoginResponse> LoginAsync(LoginUser user)
+        public async Task<LoginResponseDto> LoginAsync(LoginUserDto user)
         {
-            var response = new LoginResponse();
-            var identityUser = await _userManager.FindByEmailAsync(user.UserName);
+            var response = new LoginResponseDto(); // "IsLoggedIn" will be false by default
+            var identityUser = await _userManager.FindByEmailAsync(user.Email);
 
             // determine if user exists & is valid
             if (identityUser is null || !(await _userManager.CheckPasswordAsync(identityUser, user.Password)))
-            {                
-                return response;
+            {
+                response.Message = "User credentials not valid";
+                return response; 
             }
 
-            response.IsLogedIn = true;
-            response.JwtToken = this.GenerateTokenString(identityUser.Email);
+            response.IsLoggedIn = true;
+            response.JwtToken = this.GenerateTokenString(identityUser);
+            //response.JwtToken = this.GenerateTokenString(identityUser.Email);
             response.RefreshToken = this.GenerateRefreshTokenString();
+            response.Message = "User logged in successfully";
 
             identityUser.RefreshToken = response.RefreshToken;
             identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(1); // default to 1 day
@@ -60,11 +63,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginResponse> RefreshTokenAsync(RefreshTokenModel model)
+        public async Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenModel model)
         {
             var principal = GetTokenPrincipal(model.JwtToken);
 
-            var response = new LoginResponse();
+            var response = new LoginResponseDto();
             if (principal?.Identity?.Name is null)
                 return response;
 
@@ -73,8 +76,9 @@ namespace ShareMemories.Infrastructure.Services
             if (identityUser is null || identityUser.RefreshToken != model.RefreshToken || identityUser.RefreshTokenExpiry < DateTime.Now)
                 return response;
 
-            response.IsLogedIn = true;
-            response.JwtToken = this.GenerateTokenString(identityUser.Email);
+            response.IsLoggedIn = true;
+            response.JwtToken = this.GenerateTokenString(identityUser);
+            //response.JwtToken = this.GenerateTokenString(identityUser.Email);
             response.RefreshToken = this.GenerateRefreshTokenString();
 
             identityUser.RefreshToken = response.RefreshToken;
@@ -116,12 +120,16 @@ namespace ShareMemories.Infrastructure.Services
             return Convert.ToBase64String(randomNumber);
         }
 
-        private string GenerateTokenString(string userName)
+        private string GenerateTokenString(ExtendIdentityUser extendIdentityUser)
         {
+            // claims' details used in generating the token
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name,userName),
-                new Claim(ClaimTypes.Role,"Admin"), // get role from Principal object (against AD)
+                new Claim(ClaimTypes.Name,extendIdentityUser.UserName!),
+                new Claim(ClaimTypes.Email,extendIdentityUser.Email!),
+                new Claim(ClaimTypes.DateOfBirth,extendIdentityUser.DateOfBirth.ToShortDateString()),
+
+                //new Claim(ClaimTypes.Role,"Admin"), // get role from Principal object (against AD)
             };
 
             var staticKey = _config.GetSection("Jwt:Key").Value;

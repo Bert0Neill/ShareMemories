@@ -21,7 +21,7 @@ namespace ShareMemories.API.Endpoints.MinimalAPIs
             /*******************************************************************************************************
              * Register a new user (adding FluentValidator to ensure data integrity from client)
              *******************************************************************************************************/
-            app.MapPost("/RegisterAsync", async (LoginUser user, IAuthService authService) =>
+            app.MapPost("/RegisterAsync", async (RegisterUserDto user, IAuthService authService) =>
             {
                 IEnumerable<IdentityError> result = await authService.RegisterUserAsync(user);
 
@@ -49,11 +49,11 @@ namespace ShareMemories.API.Endpoints.MinimalAPIs
             /*******************************************************************************************************
              * Login an already registered user
              *******************************************************************************************************/
-            app.MapPost("/LoginAsync", async (LoginUser user, IAuthService authService) =>
+            app.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService) =>
             {
                 var loginResult = await authService.LoginAsync(user);
 
-                if (loginResult.IsLogedIn)
+                if (loginResult.IsLoggedIn)
                 {
                     return Results.Ok(loginResult);
                 }
@@ -80,7 +80,7 @@ namespace ShareMemories.API.Endpoints.MinimalAPIs
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register API Library" } }
             })
             .CacheOutput(x => x.Tag("LoginUser"))
-            .AddEndpointFilter<GenericValidationFilter<LoginUserValidator,LoginUser>>(); // apply fluent validation to DTO model from client and pass back broken rules    
+            .AddEndpointFilter<GenericValidationFilter<LoginUserValidator,RegisterUserDto>>(); // apply fluent validation to DTO model from client and pass back broken rules    
 
             /*******************************************************************************************************
             * Refresh a user's login instance, without having to pass the credentials again
@@ -93,7 +93,7 @@ namespace ShareMemories.API.Endpoints.MinimalAPIs
 
                 var loginResult = await authService.RefreshTokenAsync(refreshModel);
 
-                if (loginResult.IsLogedIn)
+                if (loginResult.IsLoggedIn)
                 {
                     return Results.Ok(loginResult);
                 }

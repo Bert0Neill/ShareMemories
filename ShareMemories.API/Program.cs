@@ -1,26 +1,19 @@
-using Ardalis.GuardClauses;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using ShareMemories.API.Endpoints.Auth;
-using ShareMemories.API.Endpoints.MinimalAPIs;
 using ShareMemories.API.Endpoints.Picture;
 using ShareMemories.API.Endpoints.Video;
-using ShareMemories.API.Endpoints.Weather;
 using ShareMemories.API.Extensions;
 using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
 using ShareMemories.Domain.Entities;
-using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Database;
 using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
 using ShareMemories.Infrastructure.Interfaces;
-using ShareMemories.Infrastructure.Services;
 using System.Security.Claims;
 using System.Text;
 
@@ -79,7 +72,6 @@ try
         .AddEntityFrameworkStores<ShareMemoriesContext>()
         .AddApiEndpoints();
 
-
     /*************************************************************************
     *                       Add Bearer JWT Authentication                    *
     **************************************************************************/
@@ -119,10 +111,10 @@ try
     //    .AddDefaultTokenProviders();
 
     /*************************************************************************
-    *                             Add Authorization                          *
+    *               Add Authorization & Authentication                       *
     **************************************************************************/
     builder.Services.AddAuthorization();
-
+    //builder.Services.AddAuthentication();
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
@@ -132,7 +124,6 @@ try
     /*************************************************************************
     *                       Register Minimal APIEndpoints                    *
     **************************************************************************/
-    app.MapWeatherEndpoints();
     app.MapPictureEndpoints();
     app.MapVideoEndpoints();
     //app.MapAuthEndpoints();
@@ -165,17 +156,11 @@ try
     ///*************************************************
     ///* Apply security middleware 
     //*************************************************/
-    //app.UseAuthentication();
-    //app.UseAuthorization();
+    app.UseAuthentication();
+    app.UseAuthorization();
 
-    ///*************************************************
-    //* Exposed public end-points
-    //*************************************************/
-    //new BooksAPIs(app).RegisterBooksAPI();
-    //new LoginRegisterAPIs(app).RegisterLoginAPI();
-
-    // Test authentication API
-    app.MapGet("/test", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}").RequireAuthorization();
+    // Test authentication API when logged in
+    app.MapGet("/testAuthenticationWhenLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}").RequireAuthorization();
 
     app.Run();
 }
