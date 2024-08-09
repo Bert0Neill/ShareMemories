@@ -108,7 +108,8 @@ try
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireUppercase = true;
-
+        options.User.RequireUniqueEmail = true;
+        
     })  .AddEntityFrameworkStores<ShareMemoriesContext>()
         .AddApiEndpoints()
         .AddDefaultTokenProviders();

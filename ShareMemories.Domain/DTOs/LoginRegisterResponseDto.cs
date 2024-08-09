@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ShareMemories.Domain.DTOs
 {
-    public class LoginResponseDto
+    public class LoginRegisterResponseDto
     {
         public bool IsLoggedIn { get; set; } = false;
         public string JwtToken { get; set; }

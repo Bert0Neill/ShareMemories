@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using ShareMemories.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace ShareMemories.Infrastructure.Services
 {
@@ -26,8 +27,18 @@ namespace ShareMemories.Infrastructure.Services
         }
 
         #region APIs
-        public async Task<IdentityResult> RegisterUserAsync(RegisterUserDto user)
+        public async Task<LoginRegisterResponseDto> RegisterUserAsync(RegisterUserDto user)
         {
+            LoginRegisterResponseDto registerResponseDto = new();
+
+            // verify that Username and\or email have not already been registered
+            if (await IsUsernameOrEmailTakenAsync(user.UserName, user.Email))
+            {
+                registerResponseDto.Message = $"Username {user.UserName} or Email {user.Email}, already exists within the system";
+                return registerResponseDto;
+            }
+
+            // add these details to the AspNetUser table
             var identityUser = new ExtendIdentityUser
             {
                 UserName = user.UserName,
@@ -35,16 +46,28 @@ namespace ShareMemories.Infrastructure.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 DateOfBirth = user.DateOfBirth
-
             };
 
             var result = await _userManager.CreateAsync(identityUser, user.Password);
-            return result;
+
+            if (result.Errors.Any())
+            {
+                var errors = new StringBuilder();
+                result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                registerResponseDto.Message = errors.ToString();
+            }
+            else
+            {
+                registerResponseDto.IsLoggedIn = true;
+                registerResponseDto.Message = $"Username: {user.UserName} successfully registered, you can now login";
+            }
+
+            return registerResponseDto;
         }
 
-        public async Task<LoginResponseDto> LoginAsync(LoginUserDto user)
+        public async Task<LoginRegisterResponseDto> LoginAsync(LoginUserDto user)
         {
-            var response = new LoginResponseDto(); // "IsLoggedIn" will be false by default
+            var response = new LoginRegisterResponseDto(); // "IsLoggedIn" will be false by default
             var identityUser = await _userManager.FindByEmailAsync(user.Email);
 
             // determine if user exists & is valid
@@ -67,11 +90,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenModel model)
+        public async Task<LoginRegisterResponseDto> RefreshTokenAsync(RefreshTokenModel model)
         {
             var principal = GetTokenPrincipal(model.JwtToken);
 
-            var response = new LoginResponseDto();
+            var response = new LoginRegisterResponseDto();
             if (principal?.Identity?.Name is null)
                 return response;
 
@@ -148,6 +171,21 @@ namespace ShareMemories.Infrastructure.Services
 
             string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
             return tokenString;
+        }
+
+        public async Task<bool> IsUsernameOrEmailTakenAsync(string username, string email)
+        {
+            var usernameTask = await _userManager.FindByNameAsync(username);
+
+            // check for existing email that is used and not archived
+            var emailTask = await _userManager.Users
+                                  .Where(u => u.Email == email && u.IsArchived == false)
+                                  .FirstOrDefaultAsync();
+
+            var usernameExists = usernameTask != null;
+            var emailExists = emailTask != null;
+
+            return usernameExists || emailExists;
         }
         #endregion
 

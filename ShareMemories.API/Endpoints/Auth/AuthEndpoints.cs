@@ -23,15 +23,9 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 var result = await authService.RegisterUserAsync(user);
 
-                if (result.Errors.Any())
-                {
-                    var errors = new StringBuilder();
-                    result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
-                    return Results.BadRequest(errors.ToString());
-                }
-
-                return Results.Ok("Successfully registered, you can now login.");
-
+                if (result.IsLoggedIn) return Results.Ok("Successfully registered, you can now login.");                
+                else return Results.BadRequest(new { Errors = result.Message });
+                
             }).WithName("RegisterAsync")
               .WithOpenApi(x => new OpenApiOperation(x)
               {

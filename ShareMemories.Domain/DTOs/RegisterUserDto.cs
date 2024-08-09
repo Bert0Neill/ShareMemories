@@ -28,7 +28,7 @@ namespace ShareMemories.Domain.DTOs
         public string ConfirmPassword { get; set; } = string.Empty;
 
         [Required]
-        public DateOnly DateOfBirth { get; set; } 
+        public DateOnly DateOfBirth { get; set; }         
 
     }
 }
