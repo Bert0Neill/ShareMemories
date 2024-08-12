@@ -10,6 +10,7 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using ShareMemories.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using ShareMemories.Application.Interfaces;
 
 namespace ShareMemories.Infrastructure.Services
 {
@@ -19,14 +20,45 @@ namespace ShareMemories.Infrastructure.Services
         // class variables
         private readonly UserManager<ExtendIdentityUser> _userManager;
         private readonly IConfiguration _config;
+        private readonly IJwtTokenService _jwtTokenService;
 
-        public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config)
+        public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService)
         {
             _userManager = userManager;
             _config = config;
+            _jwtTokenService = jwtTokenService; 
         }
 
         #region APIs
+        public async Task<LoginRegisterResponseDto> LoginAsync(LoginUserDto user)
+        {
+            var response = new LoginRegisterResponseDto(); // "IsLoggedIn" will be false by default
+            var identityUser = await _userManager.FindByNameAsync(user.UserName);
+
+            // determine if user exists & is valid
+            if (identityUser is null || !(await _userManager.CheckPasswordAsync(identityUser, user.Password)))
+            {
+                response.Message = "User credentials not valid";
+                return response;
+            }
+
+            var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
+
+            response.IsLoggedIn = true;
+            // response.JwtToken = this.GenerateTokenString(identityUser);
+            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles);
+            response.RefreshToken = this.GenerateRefreshTokenString();
+            response.Message = "User logged in successfully";
+
+            identityUser.RefreshToken = response.RefreshToken;
+            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(1); // default to 1 day
+            identityUser.LastUpdated = DateTime.Now;
+
+            await _userManager.UpdateAsync(identityUser);
+
+            return response;
+        }
+
         public async Task<LoginRegisterResponseDto> RegisterUserAsync(RegisterUserDto user)
         {
             LoginRegisterResponseDto registerResponseDto = new();
@@ -57,8 +89,24 @@ namespace ShareMemories.Infrastructure.Services
                 result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
                 registerResponseDto.Message = errors.ToString();
             }
-            else
+            else // succeeded - assign default role
             {
+                // Optionally, assign a default role to the user
+                var roleAssignResult = await _userManager.AddToRoleAsync(identityUser, "User"); // Replace "User" with the desired role
+
+                if (!roleAssignResult.Succeeded)
+                {
+                    var roleErrors = new StringBuilder();
+                    roleAssignResult.Errors.ToList().ForEach(err => roleErrors.AppendLine($"• {err.Description}"));
+                    registerResponseDto.Message = $"User registered, but there was an issue assigning roles: {roleErrors}";
+                }
+                else // failed to register role
+                {
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                    registerResponseDto.Message = errors.ToString();                    
+                }
+
                 registerResponseDto.IsLoggedIn = true;
                 registerResponseDto.Message = $"Username: {user.UserName} successfully registered, you can now login";
             }
@@ -66,36 +114,10 @@ namespace ShareMemories.Infrastructure.Services
             return registerResponseDto;
         }
 
-        public async Task<LoginRegisterResponseDto> LoginAsync(LoginUserDto user)
-        {
-            var response = new LoginRegisterResponseDto(); // "IsLoggedIn" will be false by default
-            var identityUser = await _userManager.FindByEmailAsync(user.Email);
-
-            // determine if user exists & is valid
-            if (identityUser is null || !(await _userManager.CheckPasswordAsync(identityUser, user.Password)))
-            {
-                response.Message = "User credentials not valid";
-                return response; 
-            }
-
-            response.IsLoggedIn = true;
-            response.JwtToken = this.GenerateTokenString(identityUser);
-            //response.JwtToken = this.GenerateTokenString(identityUser.Email);
-            response.RefreshToken = this.GenerateRefreshTokenString();
-            response.Message = "User logged in successfully";
-
-            identityUser.RefreshToken = response.RefreshToken;
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(1); // default to 1 day
-            identityUser.LastUpdated = DateTime.Now;
-            
-            await _userManager.UpdateAsync(identityUser);
-
-            return response;
-        }
-
         public async Task<LoginRegisterResponseDto> RefreshTokenAsync(RefreshTokenModel model)
         {
-            var principal = GetTokenPrincipal(model.JwtToken);
+            var principal = _jwtTokenService.GetPrincipalFromExpiredToken(model.JwtToken);
+            //var principal = GetTokenPrincipal(model.JwtToken);
 
             var response = new LoginRegisterResponseDto();
             if (principal?.Identity?.Name is null)
@@ -106,18 +128,23 @@ namespace ShareMemories.Infrastructure.Services
             if (identityUser is null || identityUser.RefreshToken != model.RefreshToken || identityUser.RefreshTokenExpiry < DateTime.Now)
                 return response;
 
-            response.IsLoggedIn = true;
-            response.JwtToken = this.GenerateTokenString(identityUser);
-            //response.JwtToken = this.GenerateTokenString(identityUser.Email);
-            response.RefreshToken = this.GenerateRefreshTokenString();
+            var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
 
+            response.IsLoggedIn = true;
+            //response.JwtToken = this.GenerateTokenString(identityUser);
+            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles);
+            //response.RefreshToken = this.GenerateRefreshTokenString();
+            response.RefreshToken = _jwtTokenService.GenerateRefreshToken();
+
+            // update AspNetUser DB table with latest details 
             identityUser.RefreshToken = response.RefreshToken;
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(1); // refresh token - default to 1 day (JWT default to 30 minutes or less)
+            identityUser.RefreshTokenExpiry = DateTime.Now.AddMonths(1); // refresh token should be longer than JWT bearer token
             //identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // testing
             await _userManager.UpdateAsync(identityUser);
 
             return response;
         }
+
         #endregion
 
         #region Helper Methods

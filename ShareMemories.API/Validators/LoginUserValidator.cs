@@ -8,10 +8,14 @@ namespace ShareMemories.API.Validators
     public class LoginUserValidator : AbstractValidator<LoginUserDto>
     {
         public LoginUserValidator()
-        {            
-            RuleFor(p => p.Email)                
+        {
+            //RuleFor(p => p.Email)                
+            //    .NotEmpty()
+            //    .WithMessage("Email must not be blank");
+
+            RuleFor(p => p.UserName)
                 .NotEmpty()
-                .WithMessage("Email must not be blank");
+                .WithMessage("Username must not be blank");
 
             RuleFor(p => p.Password)
                .NotEmpty()

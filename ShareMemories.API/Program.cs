@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,7 @@ using ShareMemories.Application.InternalServices;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Infrastructure.Database;
 using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
+using ShareMemories.Infrastructure.ExternalServices.Security;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
 using System.Security.Claims;
@@ -56,6 +58,7 @@ try
     builder.Services.AddScoped<IPictureService, PictureService>();          // Application
     builder.Services.AddScoped<IAuthService, AuthService>();                // Application
     builder.Services.AddScoped<IPictureRepository, PictureRepository>();    // Infrastructure
+    builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();        // Infrastructure
 
     /*************************************************************************
      *   Response output caching (duration) policies - default is 5 seconds  *
@@ -93,6 +96,20 @@ try
             ValidAudience = builder.Configuration.GetSection("Jwt:Audience").Value,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value))
         };
+
+        // Middleware to ensure JWT passed in - Set the token retrieval method to use the cookie
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.ContainsKey("jwtToken"))
+                {
+                    context.Token = context.Request.Cookies["jwtToken"];
+                }
+                return Task.CompletedTask;
+            }
+        };
+
     });
 
     /********************************************************************************
@@ -119,6 +136,28 @@ try
     **************************************************************************/
     builder.Services.AddAuthorization();
     //builder.Services.AddAuthentication();
+
+    /*************************************************************************
+    *               Add Custom Authorization Policies                        *
+    **************************************************************************/
+    builder.Services.AddAuthorization(options =>
+    {
+        // Policy for Admin role
+        options.AddPolicy("AdminPolicy", policy =>
+            policy.RequireRole("Admin"));
+
+        // Policy for User role
+        options.AddPolicy("UserPolicy", policy =>
+            policy.RequireRole("User"));
+
+        // Policy for QA role
+        options.AddPolicy("QAPolicy", policy =>
+            policy.RequireRole("Qa"));
+
+        // Policy for User or QA role
+        options.AddPolicy("UserOrQaPolicy", policy =>
+       policy.RequireRole("User", "Qa"));
+    });
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
@@ -154,6 +193,17 @@ try
 
     // Test authentication API when logged in
     app.MapGet("/testAuthenticationWhenLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}").RequireAuthorization();
+
+    
+    app.MapGet("/admin-data", [Authorize(Policy = "AdminPolicy")] () =>
+    {
+        return Results.Ok("This data is accessible by Admins.");
+    });
+
+    app.MapGet("/user-qa-data", [Authorize(Policy = "UserOrQaPolicy")] () =>
+    {
+        return Results.Ok("This data is accessible by User Or Qa.");
+    });
 
     app.Run();
 }
