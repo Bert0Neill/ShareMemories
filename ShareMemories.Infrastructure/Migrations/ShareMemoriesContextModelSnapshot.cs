@@ -47,6 +47,26 @@ namespace ShareMemories.Infrastructure.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "1",
+                            Name = "Admin",
+                            NormalizedName = "ADMIN"
+                        },
+                        new
+                        {
+                            Id = "2",
+                            Name = "User",
+                            NormalizedName = "USER"
+                        },
+                        new
+                        {
+                            Id = "3",
+                            Name = "Qa",
+                            NormalizedName = "QA"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -169,8 +189,8 @@ namespace ShareMemories.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateOfBirth")
-                        .HasColumnType("datetime2");
+                    b.Property<DateOnly>("DateOfBirth")
+                        .HasColumnType("date");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -243,6 +263,50 @@ namespace ShareMemories.Infrastructure.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "43a8cbb1-4e09-41de-9281-679f8ee3703a",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "68f8a171-8d55-4196-8bff-8dbb76237385",
+                            CreatedDate = new DateTime(2024, 8, 12, 9, 21, 29, 472, DateTimeKind.Local).AddTicks(4896),
+                            DateOfBirth = new DateOnly(2024, 8, 12),
+                            Email = "user@example.com",
+                            EmailConfirmed = false,
+                            FirstName = "Jane",
+                            IsArchived = false,
+                            LastName = "Bloggs",
+                            LockoutEnabled = true,
+                            NormalizedEmail = "USER@EXAMPLE.COM",
+                            NormalizedUserName = "STRING4",
+                            PasswordHash = "AQAAAAIAAYagAAAAELNSkTanLtE35z4s/YMe2pks+t6xCd7UZfZyduBMcuxJPopgdEcYmQdUhhPr/PDotg==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "M646EOPZA5FUTBWNHGGQSH7C7K7GPTY6",
+                            TwoFactorEnabled = false,
+                            UserName = "string4"
+                        },
+                        new
+                        {
+                            Id = "af327f76-e5c4-43a4-8590-e8bd355003f2",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "c772f240-6771-4ef5-b7a8-6c316ab651ad",
+                            CreatedDate = new DateTime(2024, 8, 12, 9, 21, 29, 472, DateTimeKind.Local).AddTicks(4993),
+                            DateOfBirth = new DateOnly(2024, 8, 12),
+                            Email = "user@example6.com",
+                            EmailConfirmed = false,
+                            FirstName = "Joe",
+                            IsArchived = false,
+                            LastName = "Bloggs",
+                            LockoutEnabled = true,
+                            NormalizedEmail = "USER@EXAMPLE6.COM",
+                            NormalizedUserName = "STRING13456",
+                            PasswordHash = "AQAAAAIAAYagAAAAEFr0LgSGpJNLW6YLQN9Z7sjtmW3LEIjO5wIxGul5maQd3A4zD9CqOAqsBbiQ8m4Xag==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "G2UNOKQAHAAQL33PYMQ7IAC724OPCY3G",
+                            TwoFactorEnabled = false,
+                            UserName = "string13456"
+                        });
                 });
 
             modelBuilder.Entity("ShareMemories.Domain.Entities.Friendship", b =>
@@ -265,6 +329,36 @@ namespace ShareMemories.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Friendships");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            FriendsWithId = 2,
+                            IsArchived = false,
+                            UserId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            FriendsWithId = 1,
+                            IsArchived = false,
+                            UserId = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            FriendsWithId = 4,
+                            IsArchived = false,
+                            UserId = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            FriendsWithId = 3,
+                            IsArchived = false,
+                            UserId = 4
+                        });
                 });
 
             modelBuilder.Entity("ShareMemories.Domain.Entities.Picture", b =>
@@ -286,7 +380,7 @@ namespace ShareMemories.Infrastructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<byte[]>("Picture1")
+                    b.Property<byte[]>("PictureBytes")
                         .IsRequired()
                         .HasColumnType("varbinary(max)")
                         .HasColumnName("Picture");
@@ -297,6 +391,40 @@ namespace ShareMemories.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Picture", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            FriendlyName = "My picture 1",
+                            IsArchived = false,
+                            PictureBytes = new byte[] { 105, 109, 97, 103, 101, 95, 100, 97, 116, 97, 95, 49 },
+                            UserId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            FriendlyName = "My picture 2",
+                            IsArchived = false,
+                            PictureBytes = new byte[] { 105, 109, 97, 103, 101, 95, 100, 97, 116, 97, 95, 50 },
+                            UserId = 1
+                        },
+                        new
+                        {
+                            Id = 3,
+                            FriendlyName = "My picture 3",
+                            IsArchived = false,
+                            PictureBytes = new byte[] { 105, 109, 97, 103, 101, 95, 100, 97, 116, 97, 95, 51 },
+                            UserId = 2
+                        },
+                        new
+                        {
+                            Id = 4,
+                            FriendlyName = "My picture 4",
+                            IsArchived = false,
+                            PictureBytes = new byte[] { 105, 109, 97, 103, 101, 95, 100, 97, 116, 97, 95, 52 },
+                            UserId = 4
+                        });
                 });
 
             modelBuilder.Entity("ShareMemories.Domain.Entities.Video", b =>
@@ -336,6 +464,44 @@ namespace ShareMemories.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Video", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            FriendlyName = "My video 1",
+                            IsArchived = false,
+                            IsWatched = false,
+                            Url = "https://www.youtube.com/watch?v=-wtIMTCHWuI",
+                            UserId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            FriendlyName = "My video 4",
+                            IsArchived = false,
+                            IsWatched = true,
+                            Url = "http://youtube.com/watch?v=-wtIMTCHWuI",
+                            UserId = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            FriendlyName = "My video 3",
+                            IsArchived = false,
+                            IsWatched = false,
+                            Url = "http://m.youtube.com/watch?v=-wtIMTCHWuI",
+                            UserId = 1
+                        },
+                        new
+                        {
+                            Id = 4,
+                            FriendlyName = "My video 5",
+                            IsArchived = false,
+                            IsWatched = true,
+                            Url = "https://www.youtube.com/watch?v=lalOy8Mbfdc",
+                            UserId = 4
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

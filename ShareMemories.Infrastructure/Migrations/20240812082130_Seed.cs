@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace ShareMemories.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Seed : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -32,7 +34,7 @@ namespace ShareMemories.Infrastructure.Migrations
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DateOfBirth = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DateOfBirth = table.Column<DateOnly>(type: "date", nullable: false),
                     IsArchived = table.Column<bool>(type: "bit", nullable: true),
                     LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -210,6 +212,58 @@ namespace ShareMemories.Infrastructure.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.InsertData(
+                table: "AspNetRoles",
+                columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
+                values: new object[,]
+                {
+                    { "1", null, "Admin", "ADMIN" },
+                    { "2", null, "User", "USER" },
+                    { "3", null, "Qa", "QA" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "AspNetUsers",
+                columns: new[] { "Id", "AccessFailedCount", "ConcurrencyStamp", "CreatedDate", "DateOfBirth", "Email", "EmailConfirmed", "FirstName", "IsArchived", "LastName", "LastUpdated", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "RefreshToken", "RefreshTokenExpiry", "SecurityStamp", "TwoFactorEnabled", "UserName" },
+                values: new object[,]
+                {
+                    { "43a8cbb1-4e09-41de-9281-679f8ee3703a", 0, "68f8a171-8d55-4196-8bff-8dbb76237385", new DateTime(2024, 8, 12, 9, 21, 29, 472, DateTimeKind.Local).AddTicks(4896), new DateOnly(2024, 8, 12), "user@example.com", false, "Jane", false, "Bloggs", null, true, null, "USER@EXAMPLE.COM", "STRING4", "AQAAAAIAAYagAAAAELNSkTanLtE35z4s/YMe2pks+t6xCd7UZfZyduBMcuxJPopgdEcYmQdUhhPr/PDotg==", null, false, null, null, "M646EOPZA5FUTBWNHGGQSH7C7K7GPTY6", false, "string4" },
+                    { "af327f76-e5c4-43a4-8590-e8bd355003f2", 0, "c772f240-6771-4ef5-b7a8-6c316ab651ad", new DateTime(2024, 8, 12, 9, 21, 29, 472, DateTimeKind.Local).AddTicks(4993), new DateOnly(2024, 8, 12), "user@example6.com", false, "Joe", false, "Bloggs", null, true, null, "USER@EXAMPLE6.COM", "STRING13456", "AQAAAAIAAYagAAAAEFr0LgSGpJNLW6YLQN9Z7sjtmW3LEIjO5wIxGul5maQd3A4zD9CqOAqsBbiQ8m4Xag==", null, false, null, null, "G2UNOKQAHAAQL33PYMQ7IAC724OPCY3G", false, "string13456" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Friendships",
+                columns: new[] { "Id", "FriendsWithId", "IsArchived", "UserId" },
+                values: new object[,]
+                {
+                    { 1, 2, false, 1 },
+                    { 2, 1, false, 2 },
+                    { 3, 4, false, 3 },
+                    { 4, 3, false, 4 }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Picture",
+                columns: new[] { "Id", "FriendlyName", "IsArchived", "Picture", "UserId" },
+                values: new object[,]
+                {
+                    { 1, "My picture 1", false, new byte[] { 105, 109, 97, 103, 101, 95, 100, 97, 116, 97, 95, 49 }, 1 },
+                    { 2, "My picture 2", false, new byte[] { 105, 109, 97, 103, 101, 95, 100, 97, 116, 97, 95, 50 }, 1 },
+                    { 3, "My picture 3", false, new byte[] { 105, 109, 97, 103, 101, 95, 100, 97, 116, 97, 95, 51 }, 2 },
+                    { 4, "My picture 4", false, new byte[] { 105, 109, 97, 103, 101, 95, 100, 97, 116, 97, 95, 52 }, 4 }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Video",
+                columns: new[] { "Id", "FriendlyName", "IsArchived", "IsWatched", "URL", "UserId" },
+                values: new object[,]
+                {
+                    { 1, "My video 1", false, false, "https://www.youtube.com/watch?v=-wtIMTCHWuI", 1 },
+                    { 2, "My video 4", false, true, "http://youtube.com/watch?v=-wtIMTCHWuI", 2 },
+                    { 3, "My video 3", false, false, "http://m.youtube.com/watch?v=-wtIMTCHWuI", 1 },
+                    { 4, "My video 5", false, true, "https://www.youtube.com/watch?v=lalOy8Mbfdc", 4 }
                 });
 
             migrationBuilder.CreateIndex(

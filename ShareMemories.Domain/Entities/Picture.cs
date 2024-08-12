@@ -15,7 +15,7 @@ public partial class Picture
 
     public string FriendlyName { get; set; }
 
-    public byte[] Picture1 { get; set; }
+    public byte[] PictureBytes { get; set; }
 
     public bool? IsArchived { get; set; }
 

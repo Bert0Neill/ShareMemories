@@ -25,7 +25,7 @@ namespace ShareMemories.Application.InternalServices
                 Id = 1,
                 UserId = 101,
                 FriendlyName = "Sunset",
-                Picture1 = new byte[] { 0x01, 0x02, 0x03 }, // Example byte array
+                PictureBytes = new byte[] { 0x01, 0x02, 0x03 }, // Example byte array
                 IsArchived = false
             };
 
@@ -34,7 +34,7 @@ namespace ShareMemories.Application.InternalServices
                 Id = 2,
                 UserId = 102,
                 FriendlyName = "Mountain",
-                Picture1 = new byte[] { 0x04, 0x05, 0x06 }, // Example byte array
+                PictureBytes = new byte[] { 0x04, 0x05, 0x06 }, // Example byte array
                 IsArchived = true
             };
 

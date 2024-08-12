@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using ShareMemories.Domain.Entities;
@@ -63,5 +64,6 @@ namespace ShareMemories.Infrastructure.ExternalServices.Database.Repositories
 
             return album;
         }
+
     }
 }

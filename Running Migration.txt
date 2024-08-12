@@ -1,0 +1,32 @@
+1) Initiall create your database in SQL Server
+2) In DbContext Seed your data with seperate functions
+3) Drop-Database		(doesn't drop database only tables etc.)
+4) Add-Migration Seed (must have unique name parameter)
+5) update-database	(applies your migration script)
+6) If you make changes to schema - Delete Migration file in VS and then repeat steps above (if you want to keep the same Migration name "Seed")
+
+
+NB: Because I have extended the IdentityUser table you must use that (ExtendIdentityUser), not the default IdentityUser class:
+
+  builder.Entity<ExtendIdentityUser>().HasData(
+             new ExtendIdentityUser
+             {
+                 Id = "43a8cbb1-4e09-41de-9281-679f8ee3703a",
+                 UserName = "string4",
+                 NormalizedUserName = "STRING4",
+                 Email = "user@example.com",
+                 NormalizedEmail = "USER@EXAMPLE.COM",
+                 EmailConfirmed = false,
+                 PasswordHash = "AQAAAAIAAYagAAAAELNSkTanLtE35z4s/YMe2pks+t6xCd7UZfZyduBMcuxJPopgdEcYmQdUhhPr/PDotg==",
+                 SecurityStamp = "M646EOPZA5FUTBWNHGGQSH7C7K7GPTY6",
+                 ConcurrencyStamp = "68f8a171-8d55-4196-8bff-8dbb76237385",
+                 PhoneNumber = null,
+                 PhoneNumberConfirmed = false,
+                 TwoFactorEnabled = false,
+                 LockoutEnd = null,
+                 LockoutEnabled = true,
+                 AccessFailedCount = 0,
+                 DateOfBirth = DateOnly.FromDateTime(DateTime.Now),
+                 FirstName = "Jane",
+                 LastName = "Bloggs"
+             },

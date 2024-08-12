@@ -24,6 +24,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SQL", "SQL", "{2E9F5CB3-29F
 		Create DB and Insert Data.sql = Create DB and Insert Data.sql
 		DB Credentials.txt = DB Credentials.txt
 		Insert Data.sql = Insert Data.sql
+		Running Migration.txt = Running Migration.txt
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShareMemories.Web", "ShareMemories.Web\ShareMemories.Web.csproj", "{FDB0EA8B-E396-40FB-BD77-06ACFA386260}"
