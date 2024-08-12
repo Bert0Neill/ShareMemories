@@ -51,7 +51,7 @@ namespace ShareMemories.Infrastructure.Services
             response.Message = "User logged in successfully";
 
             identityUser.RefreshToken = response.RefreshToken;
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(1); // default to 1 day
+            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(30); // ensure that refresh token expires long after JWT bearer token
             identityUser.LastUpdated = DateTime.Now;
 
             await _userManager.UpdateAsync(identityUser);
@@ -83,32 +83,29 @@ namespace ShareMemories.Infrastructure.Services
 
             var result = await _userManager.CreateAsync(identityUser, user.Password);
 
+            registerResponseDto.IsLoggedIn = true; // allow checks below to modify logged in status
+
             if (result.Errors.Any())
             {
                 var errors = new StringBuilder();
                 result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
                 registerResponseDto.Message = errors.ToString();
+                registerResponseDto.IsLoggedIn = false; // user not successfully registered
             }
-            else // succeeded - assign default role
+            else // success - assign default role
             {
-                // Optionally, assign a default role to the user
+                // assign a default role (USER) to the user
                 var roleAssignResult = await _userManager.AddToRoleAsync(identityUser, "User"); // Replace "User" with the desired role
 
-                if (!roleAssignResult.Succeeded)
+                if (roleAssignResult.Errors.Any())
                 {
                     var roleErrors = new StringBuilder();
                     roleAssignResult.Errors.ToList().ForEach(err => roleErrors.AppendLine($"• {err.Description}"));
-                    registerResponseDto.Message = $"User registered, but there was an issue assigning roles: {roleErrors}";
-                }
-                else // failed to register role
-                {
-                    var errors = new StringBuilder();
-                    result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
-                    registerResponseDto.Message = errors.ToString();                    
-                }
-
-                registerResponseDto.IsLoggedIn = true;
-                registerResponseDto.Message = $"Username: {user.UserName} successfully registered, you can now login";
+                    registerResponseDto.Message = $"Username: {user.UserName} registered, but there was an issue assigning roles: {roleErrors}";
+                    registerResponseDto.IsLoggedIn = false; // user not successfully registered
+                }                
+                else // success registering user & role
+                    registerResponseDto.Message = $"Username: {user.UserName} registered successfully, you can now log in.";
             }
 
             return registerResponseDto;

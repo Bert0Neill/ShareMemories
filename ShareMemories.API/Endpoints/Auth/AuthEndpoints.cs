@@ -30,7 +30,7 @@ namespace ShareMemories.API.Endpoints.Auth
               .WithOpenApi(x => new OpenApiOperation(x)
               {
                   Summary = "Register a new user",
-                  Description = "Registers a new user within the .Net Roles Identity DB.  Returns a status string for the operation.",
+                  Description = "Registers a new user within the .Net Roles Identity DB. Must have a unique Username & Email to be valid. Returns a boolean status and an error string (if applicable).",
                   Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
               })
               .CacheOutput(x => x.Tag("LoginUser")) // invalidate data when new record added, by using tag in Post API                                                     
