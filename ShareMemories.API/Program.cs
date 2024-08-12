@@ -1,10 +1,12 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.Picture;
 using ShareMemories.API.Endpoints.Video;
@@ -19,6 +21,7 @@ using ShareMemories.Infrastructure.ExternalServices.Security;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
 using System.Security.Claims;
+using System.Security.Cryptography.Xml;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -83,7 +86,11 @@ try
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 
-    }).AddJwtBearer(options =>
+
+
+    })//.AddCookie(x => { x.Cookie.Name = "jwtToken"; })
+
+      .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters()
         {
@@ -97,20 +104,60 @@ try
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value))
         };
 
-        // Middleware to ensure JWT passed in - Set the token retrieval method to use the cookie
+        // Middleware that will extract out custom cookie called "jwtToken" and assign it to the request Token property (if found)
+        //options.Events = new JwtBearerEvents
+        //{
+        //    OnMessageReceived = context =>
+        //    {
+        //        if (context.Request.Cookies.ContainsKey("jwtToken")) // this cookie is assigned in "LoginAsync" endpoint
+        //        {
+        //            context.Token = context.Request.Cookies["jwtToken"];
+        //        }
+        //        return Task.CompletedTask;
+        //    }
+        //};
+
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
+               {
+                   if (context.Request.Cookies.ContainsKey("jwtToken")) // this cookie is assigned in "LoginAsync" endpoint
+                   {
+                       context.Token = context.Request.Cookies["jwtToken"];
+                   }
+                   return Task.CompletedTask;
+               },
+            OnTokenValidated = context =>
             {
-                if (context.Request.Cookies.ContainsKey("jwtToken"))
-                {
-                    context.Token = context.Request.Cookies["jwtToken"];
-                }
+                // This event is triggered when a token is successfully validated.
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                logger.Error(context.Exception);
+                // This event is triggered when authentication fails.
                 return Task.CompletedTask;
             }
         };
+    })
 
-    });
+    .AddCookie(options =>
+     {
+         //options.Events.OnRedirectToAccessDenied =
+         options.Events.OnRedirectToLogin = c =>
+         {
+             c.Response.StatusCode = StatusCodes.Status401Unauthorized;
+             return Task.FromResult<object>(null);
+         };
+     });
+    var multiSchemePolicy = new AuthorizationPolicyBuilder(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        JwtBearerDefaults.AuthenticationScheme)
+      .RequireAuthenticatedUser()
+      .Build();
+
+    builder.Services.AddAuthorization(o => o.DefaultPolicy = multiSchemePolicy);
+
 
     /********************************************************************************
     *                           Add Password strength                               *
@@ -126,16 +173,10 @@ try
         options.Password.RequireLowercase = true;
         options.Password.RequireUppercase = true;
         options.User.RequireUniqueEmail = true;
-        
-    })  .AddEntityFrameworkStores<ShareMemoriesContext>()
+
+    }).AddEntityFrameworkStores<ShareMemoriesContext>()
         .AddApiEndpoints()
         .AddDefaultTokenProviders();
-
-    /*************************************************************************
-    *               Add Authorization & Authentication                       *
-    **************************************************************************/
-    builder.Services.AddAuthorization();
-    //builder.Services.AddAuthentication();
 
     /*************************************************************************
     *               Add Custom Authorization Policies                        *
@@ -156,13 +197,48 @@ try
 
         // Policy for User or QA role
         options.AddPolicy("UserOrQaPolicy", policy =>
-       policy.RequireRole("User", "Qa"));
+            policy.RequireRole("User", "Qa"));
     });
 
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    //builder.Services.AddSwaggerGen();
+
+    // allow Swagger to use JWT Bearer Tokens when calling secure API endpoints
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.AddSecurityDefinition("bearerAuth", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+            Scheme = "Bearer"
+        });
+
+        c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference {Type = ReferenceType.SecurityScheme, Id = "bearerAuth"}
+                },
+                [] // pass in empty collection
+            }
+        });
+
+    });
+
+   /*************************************************************************
+   *               Add Authorization & Authentication                       *
+   **************************************************************************/
+    builder.Services.AddAuthorization();
+    //builder.Services.AddAuthentication();
+    
 
     var app = builder.Build();
+
+    ///*************************************************
+    ///* Apply security middleware 
+    //*************************************************/
+    app.UseAuthentication();
+    app.UseAuthorization();
 
     /*************************************************************************
     *                       Register Minimal APIEndpoints                    *
@@ -185,14 +261,9 @@ try
 
     app.UseHttpsRedirection();
 
-    ///*************************************************
-    ///* Apply security middleware 
-    //*************************************************/
-    app.UseAuthentication();
-    app.UseAuthorization();
-
     // Test authentication API when logged in
-    app.MapGet("/testAuthenticationWhenLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}").RequireAuthorization();
+    app.MapGet("/testAuthenticationWhenLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}")
+        .RequireAuthorization();
 
     
     app.MapGet("/admin-data", [Authorize(Policy = "AdminPolicy")] () =>
@@ -203,6 +274,17 @@ try
     app.MapGet("/user-qa-data", [Authorize(Policy = "UserOrQaPolicy")] () =>
     {
         return Results.Ok("This data is accessible by User Or Qa.");
+    });
+
+    //app.MapGet("/Secure", [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] () =>
+    app.MapGet("/Secure", [Authorize] () =>
+    {
+        return Results.Ok("This data is accessible by Authorize User.");
+    });
+
+    app.MapGet("/NotSecure", () =>
+    {
+        return Results.Ok("This data is accessible by everyone.");
     });
 
     app.Run();

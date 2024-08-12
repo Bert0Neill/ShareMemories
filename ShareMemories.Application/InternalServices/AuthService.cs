@@ -45,15 +45,14 @@ namespace ShareMemories.Infrastructure.Services
             var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
 
             response.IsLoggedIn = true;
-            // response.JwtToken = this.GenerateTokenString(identityUser);
             response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles);
-            response.RefreshToken = this.GenerateRefreshTokenString();
+            response.RefreshToken = this.GenerateRefreshTokenString(); // generate a new refresh token the user logs in - improves security
             response.Message = "User logged in successfully";
 
+            // populate identityUser, so that we can update the database
             identityUser.RefreshToken = response.RefreshToken;
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(30); // ensure that refresh token expires long after JWT bearer token
+            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(1); // ensure that refresh token expires long after JWT bearer token
             identityUser.LastUpdated = DateTime.Now;
-
             await _userManager.UpdateAsync(identityUser);
 
             return response;
@@ -135,7 +134,7 @@ namespace ShareMemories.Infrastructure.Services
 
             // update AspNetUser DB table with latest details 
             identityUser.RefreshToken = response.RefreshToken;
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddMonths(1); // refresh token should be longer than JWT bearer token
+            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(7); // refresh token should be longer than JWT bearer token
             //identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // testing
             await _userManager.UpdateAsync(identityUser);
 

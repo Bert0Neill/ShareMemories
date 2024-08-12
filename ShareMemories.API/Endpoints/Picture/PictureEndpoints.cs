@@ -13,7 +13,7 @@ namespace ShareMemories.API.Endpoints.Picture
         {
             var group = routes.MapGroup("pictures")
               .WithOpenApi()
-              //.RequireAuthorization()
+              .RequireAuthorization()
               ;
 
             // API below is returning a Typed Result of 'Book' or 'NotFound', depending on if the book is retrieved. Authorisation needed.
@@ -26,8 +26,7 @@ namespace ShareMemories.API.Endpoints.Picture
                 return await pictureService.GetPictureByIdAsync(id) is { } picture // pattern matching expression. Checking if bookService.GetBook(id) matches the pattern { } and assigns it to a variable named book.
                         ? TypedResults.Ok(picture) // return Book if non-null value
                         : TypedResults.NotFound(); // if Null, return NotFound
-            })
-              //.RequireAuthorization()
+            })              
               .WithName("GetPictureById")
               .WithOpenApi(x => new OpenApiOperation(x)
               {
@@ -67,7 +66,7 @@ namespace ShareMemories.API.Endpoints.Picture
             .WithName("RetrieveAllUserPicturesByUserId")
              .WithOpenApi(x => new OpenApiOperation(x)
              {
-                 Summary = "Get Picture By Id",
+                 Summary = "Get All Pictures By User Id",
                  Description = "Returns information about a selected picture from the user's library.",
                  Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
              });

@@ -9,10 +9,6 @@ namespace ShareMemories.API.Validators
     {
         public LoginUserValidator()
         {
-            //RuleFor(p => p.Email)                
-            //    .NotEmpty()
-            //    .WithMessage("Email must not be blank");
-
             RuleFor(p => p.UserName)
                 .NotEmpty()
                 .WithMessage("Username must not be blank");

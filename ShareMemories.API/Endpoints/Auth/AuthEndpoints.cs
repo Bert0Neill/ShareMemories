@@ -1,4 +1,5 @@
 ﻿using Ardalis.GuardClauses;
+using Azure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
@@ -42,12 +43,44 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              * Login an already registered user
              *******************************************************************************************************/
-            group.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService) =>
+            group.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService, HttpContext context) =>
             {
                 var loginResult = await authService.LoginAsync(user);
 
                 if (loginResult.IsLoggedIn)
                 {
+                    // Set the JWT as an HttpOnly cookie
+                    var cookieOptionsJWT = new CookieOptions
+                    {
+                        HttpOnly = true,
+                        IsEssential = true,
+                        Secure = true, // Ensures the cookie is sent over HTTPS
+                        SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
+                        //Expires = DateTimeOffset.UtcNow.AddMinutes(30) // Set expiration
+                        Expires = DateTimeOffset.UtcNow.AddDays(1) // ToDo Testing
+                    };
+
+                    // Set the Refresh JWT as an HttpOnly cookie
+                    var cookieOptionsRefreshJWT = new CookieOptions
+                    {
+                        HttpOnly = true,
+                        IsEssential = true,
+                        Secure = true, // Ensures the cookie is sent over HTTPS
+                        SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
+                        Expires = DateTimeOffset.UtcNow.AddDays(7) // Set expiration
+                         
+                    };
+
+                    // Set the cookie in the response
+                    context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, cookieOptionsJWT);
+                    context.Response.Cookies.Append("jwtRefreshToken", loginResult.RefreshToken, cookieOptionsRefreshJWT);
+
+                    //context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
+                    //context.Response.Cookies.Append("X-Username", user.UserName, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
+                    //context.Response.Cookies.Append("jwtRefreshToken", loginResult.RefreshToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
+
+
+                    //return Results.Ok(new { message = "Logged in successfully" });
                     return Results.Ok(loginResult);
                 }
 
@@ -88,6 +121,27 @@ namespace ShareMemories.API.Endpoints.Auth
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
+            /*******************************************************************************************************
+            *                           Allow user to logout and delete their JWT Token                            *
+            *******************************************************************************************************/
+            // Define the logout endpoint
+            group.MapPost("/logout", (HttpContext context) =>
+            {
+                // Clear the JWT cookie
+                context.Response.Cookies.Delete("jwtToken");
+                context.Response.Cookies.Delete("jwtRefreshToken");
+
+                //ToDo make DB call to remove RefreshToken & Expire Date form DB too
+
+                return Results.Ok(new { message = "Logged out successfully" });
+            })
+            .WithName("Logout")
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Logout user",
+                Description = "Logout user and delete their cached JWT token.",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
         }
     }
 }
