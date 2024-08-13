@@ -23,7 +23,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Security
             _configuration = configuration;
         }
 
-        public string GenerateJwtToken(ExtendIdentityUser user, IList<string> roles)
+        public string GenerateJwtToken(ExtendIdentityUser user, IList<string> roles, int refreshExpire)
         {
             var claims = new List<Claim>
             {
@@ -44,8 +44,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Security
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                //expires: DateTime.UtcNow.AddMinutes(30),
-                expires: DateTime.UtcNow.AddDays(1), // ToDo testing                
+                expires: DateTime.UtcNow.AddMinutes(refreshExpire),                                
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

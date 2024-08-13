@@ -56,8 +56,7 @@ namespace ShareMemories.API.Endpoints.Auth
                         IsEssential = true,
                         Secure = true, // Ensures the cookie is sent over HTTPS
                         SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-                        //Expires = DateTimeOffset.UtcNow.AddMinutes(30) // Set expiration
-                        Expires = DateTimeOffset.UtcNow.AddDays(1) // ToDo Testing
+                        Expires = DateTimeOffset.UtcNow.AddMinutes(30) // Set expiration                        
                     };
 
                     // Set the Refresh JWT as an HttpOnly cookie
@@ -67,18 +66,13 @@ namespace ShareMemories.API.Endpoints.Auth
                         IsEssential = true,
                         Secure = true, // Ensures the cookie is sent over HTTPS
                         SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-                        Expires = DateTimeOffset.UtcNow.AddDays(7) // Set expiration
+                        Expires = DateTimeOffset.UtcNow.AddDays(10) // Set expiration
                          
                     };
 
                     // Set the cookie in the response
                     context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, cookieOptionsJWT);
                     context.Response.Cookies.Append("jwtRefreshToken", loginResult.RefreshToken, cookieOptionsRefreshJWT);
-
-                    //context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
-                    //context.Response.Cookies.Append("X-Username", user.UserName, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
-                    //context.Response.Cookies.Append("jwtRefreshToken", loginResult.RefreshToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.Strict });
-
 
                     //return Results.Ok(new { message = "Logged in successfully" });
                     return Results.Ok(loginResult);

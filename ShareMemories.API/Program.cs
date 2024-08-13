@@ -5,12 +5,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.Picture;
 using ShareMemories.API.Endpoints.Video;
 using ShareMemories.API.Extensions;
+using ShareMemories.API.Middleware;
 using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
@@ -88,7 +91,8 @@ try
 
 
 
-    })//.AddCookie(x => { x.Cookie.Name = "jwtToken"; })
+    })
+      .AddCookie(x => { x.Cookie.Name = "jwtToken"; })
 
       .AddJwtBearer(options =>
     {
@@ -101,7 +105,16 @@ try
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration.GetSection("Jwt:Issuer").Value,
             ValidAudience = builder.Configuration.GetSection("Jwt:Audience").Value,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value)),
+
+            // **This line maps the custom role claim**
+            //RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+
+
+
+            //ValidateLifetime = true,
+            //ClockSkew = TimeSpan.Zero,
+
         };
 
         // Middleware that will extract out custom cookie called "jwtToken" and assign it to the request Token property (if found)
@@ -119,6 +132,16 @@ try
 
         options.Events = new JwtBearerEvents
         {
+
+            OnChallenge = context =>
+            {
+                // Prevent default redirect behavior
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync("{\"error\":\"Unauthorized\"}");
+            },
+
             OnMessageReceived = context =>
                {
                    if (context.Request.Cookies.ContainsKey("jwtToken")) // this cookie is assigned in "LoginAsync" endpoint
@@ -139,17 +162,17 @@ try
                 return Task.CompletedTask;
             }
         };
-    })
+    });
 
-    .AddCookie(options =>
-     {
-         //options.Events.OnRedirectToAccessDenied =
-         options.Events.OnRedirectToLogin = c =>
-         {
-             c.Response.StatusCode = StatusCodes.Status401Unauthorized;
-             return Task.FromResult<object>(null);
-         };
-     });
+    //// add Cookie provider for HttpOnly data
+    //.AddCookie(options =>
+    // {
+    //     options.Events.OnRedirectToLogin = c =>
+    //     {
+    //         c.Response.StatusCode = StatusCodes.Status401Unauthorized;
+    //         return Task.FromResult<object>(null);
+    //     };
+    // });
     var multiSchemePolicy = new AuthorizationPolicyBuilder(
         CookieAuthenticationDefaults.AuthenticationScheme,
         JwtBearerDefaults.AuthenticationScheme)
@@ -166,50 +189,73 @@ try
     *********************************************************************************/
     builder.Services.AddIdentity<ExtendIdentityUser, IdentityRole>(options =>
     {
-        // for e.g. P@ssw0rd
-        options.Password.RequiredLength = 8;
-        options.Password.RequireNonAlphanumeric = true; // for e.g. !"£$%^
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
-        options.User.RequireUniqueEmail = true;
+        //// for e.g. P@ssw0rd
+        //options.Password.RequiredLength = 8;
+        //options.Password.RequireNonAlphanumeric = true; // for e.g. !"£$%^
+        //options.Password.RequireDigit = true;
+        //options.Password.RequireLowercase = true;
+        //options.Password.RequireUppercase = true;
+        //options.User.RequireUniqueEmail = true;
 
-    }).AddEntityFrameworkStores<ShareMemoriesContext>()
-        .AddApiEndpoints()
-        .AddDefaultTokenProviders();
+    })
+        .AddEntityFrameworkStores<ShareMemoriesContext>()
+        .AddSignInManager()
+        .AddRoles<IdentityRole>();
+    //.AddApiEndpoints()
+    //.AddDefaultTokenProviders();
 
     /*************************************************************************
     *               Add Custom Authorization Policies                        *
     **************************************************************************/
-    builder.Services.AddAuthorization(options =>
-    {
-        // Policy for Admin role
-        options.AddPolicy("AdminPolicy", policy =>
-            policy.RequireRole("Admin"));
+    //builder.Services.AddAuthorization(options =>
+    //{
+    //    // Policy for Admin role
+    //    options.AddPolicy("AdminPolicy", policy =>
+    //        policy.RequireRole("Admin"));
 
-        // Policy for User role
-        options.AddPolicy("UserPolicy", policy =>
-            policy.RequireRole("User"));
+    //    // Policy for User role
+    //    options.AddPolicy("UserPolicy", policy =>
+    //        policy.RequireRole("User"));
 
-        // Policy for QA role
-        options.AddPolicy("QAPolicy", policy =>
-            policy.RequireRole("Qa"));
+    //    // Policy for QA role
+    //    options.AddPolicy("QAPolicy", policy =>
+    //        policy.RequireRole("Qa"));
 
-        // Policy for User or QA role
-        options.AddPolicy("UserOrQaPolicy", policy =>
-            policy.RequireRole("User", "Qa"));
-    });
+    //    // Policy for User or QA role
+    //    options.AddPolicy("UserOrQaPolicy", policy =>
+    //        policy.RequireRole("User", "Qa"));
+    //});
+
+    builder.Services.AddAuthorizationBuilder()
+        .AddPolicy("UserOnlyPolicy", o =>
+        {
+            o.RequireAuthenticatedUser();
+            o.RequireRole("User");
+        })
+         .AddPolicy("AdminOnlyPolicy", o =>
+         {
+             o.RequireAuthenticatedUser();
+             o.RequireRole("Admin");
+         });
+
+
 
     builder.Services.AddEndpointsApiExplorer();
-    //builder.Services.AddSwaggerGen();
+    // builder.Services.AddSwaggerGen();
 
     // allow Swagger to use JWT Bearer Tokens when calling secure API endpoints
     builder.Services.AddSwaggerGen(c =>
     {
-        c.AddSecurityDefinition("bearerAuth", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        c.SwaggerDoc("v1", new OpenApiInfo { Version= "v1" });
+
+        c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
         {
-            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-            Scheme = "Bearer"
+            Name = "Authorization",
+            //Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+            Type = SecuritySchemeType.ApiKey,
+            BearerFormat = "JWT",
+            Scheme = "Bearer",
+            In = ParameterLocation.Header
         });
 
         c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -217,28 +263,33 @@ try
             {
                 new OpenApiSecurityScheme
                 {
-                    Reference = new OpenApiReference {Type = ReferenceType.SecurityScheme, Id = "bearerAuth"}
+                    Reference = new OpenApiReference {
+                        Type = ReferenceType.SecurityScheme, 
+                        Id = "Bearer"
+                    }
                 },
-                [] // pass in empty collection
+                Array.Empty<string>() // pass in empty collection
             }
         });
 
     });
 
-   /*************************************************************************
-   *               Add Authorization & Authentication                       *
-   **************************************************************************/
+    /*************************************************************************
+    *               Add Authorization & Authentication                       *
+    **************************************************************************/
     builder.Services.AddAuthorization();
     //builder.Services.AddAuthentication();
     
 
     var app = builder.Build();
 
+
     ///*************************************************
     ///* Apply security middleware 
     //*************************************************/
-    app.UseAuthentication();
-    app.UseAuthorization();
+    //app.UseMiddleware<JwtCookieMiddleware>(); // ???? needed ????
+    app.UseAuthentication(); // Authenticate the token
+    app.UseAuthorization();  // Authorize based on roles/policies
 
     /*************************************************************************
     *                       Register Minimal APIEndpoints                    *
@@ -271,20 +322,31 @@ try
         return Results.Ok("This data is accessible by Admins.");
     });
 
-    app.MapGet("/user-qa-data", [Authorize(Policy = "UserOrQaPolicy")] () =>
+    //app.MapGet("/userQaData", () =>
+    app.MapGet("/userPolicy", [Authorize(AuthenticationSchemes =JwtBearerDefaults.AuthenticationScheme, Policy = "UserOnlyPolicy")] () =>
+    //app.MapGet("/userQaData", [Authorize(Roles = "User")] () =>
     {
         return Results.Ok("This data is accessible by User Or Qa.");
     });
+    //}).RequireAuthorization("UserOnlyPolicy");
+    //}).RequireAuthorization();
 
-    //app.MapGet("/Secure", [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] () =>
-    app.MapGet("/Secure", [Authorize] () =>
+    app.MapGet("/Secure", (ClaimsPrincipal user) =>
     {
+        var data = user.Identity!.Name;
         return Results.Ok("This data is accessible by Authorize User.");
-    });
+    }).RequireAuthorization();
+    
 
     app.MapGet("/NotSecure", () =>
     {
         return Results.Ok("This data is accessible by everyone.");
+    });
+
+    app.MapGet("/SecureInspectClaims", [Authorize] (HttpContext httpContext) =>
+    {
+        var claims = httpContext.User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+        return Results.Ok(claims);
     });
 
     app.Run();

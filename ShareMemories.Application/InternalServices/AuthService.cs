@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using ShareMemories.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using ShareMemories.Application.Interfaces;
+using System.Runtime.CompilerServices;
 
 namespace ShareMemories.Infrastructure.Services
 {
@@ -21,7 +22,8 @@ namespace ShareMemories.Infrastructure.Services
         private readonly UserManager<ExtendIdentityUser> _userManager;
         private readonly IConfiguration _config;
         private readonly IJwtTokenService _jwtTokenService;
-
+        private const int REFRESH_TOKEN_EXPIRE_DAYS = 10;
+        private const int JWT_TOKEN_EXPIRE_MINS = 30;
         public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService)
         {
             _userManager = userManager;
@@ -45,13 +47,14 @@ namespace ShareMemories.Infrastructure.Services
             var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
 
             response.IsLoggedIn = true;
-            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles);
-            response.RefreshToken = this.GenerateRefreshTokenString(); // generate a new refresh token the user logs in - improves security
+            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
+            response.RefreshToken = _jwtTokenService.GenerateRefreshToken(); // generate a new refresh token the user logs in - improves security
             response.Message = "User logged in successfully";
 
             // populate identityUser, so that we can update the database
             identityUser.RefreshToken = response.RefreshToken;
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(1); // ensure that refresh token expires long after JWT bearer token
+            //identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // ensure that refresh token expires long after JWT bearer token
+            identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // ensure that refresh token expires long after JWT bearer token
             identityUser.LastUpdated = DateTime.Now;
             await _userManager.UpdateAsync(identityUser);
 
@@ -113,7 +116,6 @@ namespace ShareMemories.Infrastructure.Services
         public async Task<LoginRegisterResponseDto> RefreshTokenAsync(RefreshTokenModel model)
         {
             var principal = _jwtTokenService.GetPrincipalFromExpiredToken(model.JwtToken);
-            //var principal = GetTokenPrincipal(model.JwtToken);
 
             var response = new LoginRegisterResponseDto();
             if (principal?.Identity?.Name is null)
@@ -127,15 +129,13 @@ namespace ShareMemories.Infrastructure.Services
             var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
 
             response.IsLoggedIn = true;
-            //response.JwtToken = this.GenerateTokenString(identityUser);
-            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles);
-            //response.RefreshToken = this.GenerateRefreshTokenString();
+            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
             response.RefreshToken = _jwtTokenService.GenerateRefreshToken();
 
             // update AspNetUser DB table with latest details 
             identityUser.RefreshToken = response.RefreshToken;
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(7); // refresh token should be longer than JWT bearer token
-            //identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // testing
+            //identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // refresh token should be longer than JWT bearer token
+            identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // testing
             await _userManager.UpdateAsync(identityUser);
 
             return response;
@@ -144,60 +144,6 @@ namespace ShareMemories.Infrastructure.Services
         #endregion
 
         #region Helper Methods
-        private ClaimsPrincipal? GetTokenPrincipal(string token)
-        {
-
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("Jwt:Key").Value));
-
-            var validation = new TokenValidationParameters
-            {
-                IssuerSigningKey = securityKey,
-                ValidateLifetime = false,
-                ValidateActor = false,
-                ValidateIssuer = false,
-                ValidateAudience = false,
-            };
-            return new JwtSecurityTokenHandler().ValidateToken(token, validation, out _);
-        }
-
-        private string GenerateRefreshTokenString()
-        {
-            // this token will eventually be stored in the DB for referencing - and invalidated (in DB) everytime it is used
-            var randomNumber = new byte[64];
-
-            using (var numberGenerator = RandomNumberGenerator.Create())
-            {
-                numberGenerator.GetBytes(randomNumber);
-            }
-
-            return Convert.ToBase64String(randomNumber);
-        }
-
-        private string GenerateTokenString(ExtendIdentityUser extendIdentityUser)
-        {
-            // claims' details used in generating the token
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name,extendIdentityUser.UserName!),
-                new Claim(ClaimTypes.Email,extendIdentityUser.Email!),
-                new Claim(ClaimTypes.DateOfBirth,extendIdentityUser.DateOfBirth.ToShortDateString()),
-
-                //new Claim(ClaimTypes.Role,"Admin"), // get role from Principal object (against AD)
-            };
-
-            var staticKey = _config.GetSection("Jwt:Key").Value;
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(staticKey));
-            var signingCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
-
-            var securityToken = new JwtSecurityToken(
-                claims: claims,
-                expires: DateTime.Now.AddMinutes(30), // JWT token active for 30 minutes
-                signingCredentials: signingCred
-                );
-
-            string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
-            return tokenString;
-        }
 
         public async Task<bool> IsUsernameOrEmailTakenAsync(string username, string email)
         {
@@ -213,57 +159,6 @@ namespace ShareMemories.Infrastructure.Services
 
             return usernameExists || emailExists;
         }
-        #endregion
-
-
-        #region Original Blog Code
-        //public async Task<IEnumerable<IdentityError>> RegisterUserAsync(LoginUser user)
-        //{
-        //    var identityUser = new IdentityUser
-        //    {
-        //        UserName = user.UserName,
-        //        Email = user.UserName
-        //    };
-
-        //    var result = await _userManager.CreateAsync(identityUser, user.Password);
-        //    return result.Errors;
-        //}
-
-        // older code
-        //public async Task<bool> LoginAsync(LoginUser user)
-        //{
-        //    var identityUser = await _userManager.FindByEmailAsync(user.UserName);
-        //    if (identityUser is null)
-        //    {
-        //        return false;
-        //    }
-
-        //    return await _userManager.CheckPasswordAsync(identityUser, user.Password);
-        //}
-
-        //public string GenerateTokenString(LoginUser user)
-        //    {
-        //        var claims = new List<Claim>
-        //        {
-        //            new Claim(ClaimTypes.Email,user.UserName),
-        //            new Claim(ClaimTypes.Role,"Admin"),
-        //        };
-
-        //        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("Jwt:Key").Value));
-
-        //        var signingCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
-
-        //        var securityToken = new JwtSecurityToken(
-        //            claims: claims,
-        //            expires: DateTime.Now.AddMinutes(1),
-        //            issuer: _config.GetSection("Jwt:Issuer").Value,
-        //            audience: _config.GetSection("Jwt:Audience").Value,
-        //            signingCredentials: signingCred);
-
-        //        string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
-        //        return tokenString;
-        //    }
-        //}
         #endregion
     }
 }
