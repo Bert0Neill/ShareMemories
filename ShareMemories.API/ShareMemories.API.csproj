@@ -33,4 +33,8 @@
     <ProjectReference Include="..\ShareMemories.Infrastructure\ShareMemories.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Middleware\" />
+  </ItemGroup>
+
 </Project>

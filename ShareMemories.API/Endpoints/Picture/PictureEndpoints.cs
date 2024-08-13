@@ -1,4 +1,5 @@
 ﻿using Ardalis.GuardClauses;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.OutputCaching;
@@ -12,17 +13,12 @@ namespace ShareMemories.API.Endpoints.Picture
     {
         public static void MapPictureEndpoints(this IEndpointRouteBuilder routes)
         {
+            // apply settings to a group of API's (default to Bearer Authentication & associate a Policy with all API calls)
             var group = routes.MapGroup("pictures")
               .WithOpenApi()
-              .RequireAuthorization()
-              //.RequireAuthorization("UserPolicy")
-              ;
-
-            group.MapGet("/pictureInspectClaims", (HttpContext httpContext) =>
-            {
-                var claims = httpContext.User.Claims.Select(c => new { c.Type, c.Value }).ToList();
-                return Results.Ok(claims);
-            });
+              .RequireAuthorization("UserPolicy")
+              .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
+            
 
             // API below is returning a Typed Result of 'Book' or 'NotFound', depending on if the book is retrieved. Authorisation needed.
             group.MapGet("/PictureAsync/{id}", [OutputCache(PolicyName = "Expire30")] async Task<Results<Ok<ShareMemories.Domain.Entities.Picture>, NotFound>> (IPictureService pictureService, int id) =>

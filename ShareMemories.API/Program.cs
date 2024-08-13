@@ -1,19 +1,14 @@
 using FluentValidation;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.Picture;
 using ShareMemories.API.Endpoints.Video;
 using ShareMemories.API.Extensions;
-using ShareMemories.API.Middleware;
 using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
@@ -24,7 +19,6 @@ using ShareMemories.Infrastructure.ExternalServices.Security;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
 using System.Security.Claims;
-using System.Security.Cryptography.Xml;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,14 +43,6 @@ try
     *           Register DbContext and provide ConnectionString              *
     **************************************************************************/
     builder.Services.AddDbContext<ShareMemoriesContext>(db => db.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Singleton);
-
-    /********************************************************************************
-    * Register EXTENDED ExtendIdentityUser Endpoints (Register\login\Refresh etc.)  *
-    *********************************************************************************/
-    //builder.Services
-    //    .AddIdentityApiEndpoints<ExtendIdentityUser>()
-    //    .AddEntityFrameworkStores<ShareMemoriesContext>()
-    //    .AddApiEndpoints();
 
     /*************************************************************************
     *                       Dependency Injection                             *
@@ -88,12 +74,7 @@ try
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-
-
-
     })
-      .AddCookie(x => { x.Cookie.Name = "jwtToken"; })
-
       .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters()
@@ -106,42 +87,11 @@ try
             ValidIssuer = builder.Configuration.GetSection("Jwt:Issuer").Value,
             ValidAudience = builder.Configuration.GetSection("Jwt:Audience").Value,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value)),
-
-            // **This line maps the custom role claim**
-            //RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
-
-
-
-            //ValidateLifetime = true,
-            //ClockSkew = TimeSpan.Zero,
-
         };
 
-        // Middleware that will extract out custom cookie called "jwtToken" and assign it to the request Token property (if found)
-        //options.Events = new JwtBearerEvents
-        //{
-        //    OnMessageReceived = context =>
-        //    {
-        //        if (context.Request.Cookies.ContainsKey("jwtToken")) // this cookie is assigned in "LoginAsync" endpoint
-        //        {
-        //            context.Token = context.Request.Cookies["jwtToken"];
-        //        }
-        //        return Task.CompletedTask;
-        //    }
-        //};
-
+        // capture JWT Bearer in pipeline and assign to MessageReceivedContext
         options.Events = new JwtBearerEvents
         {
-
-            OnChallenge = context =>
-            {
-                // Prevent default redirect behavior
-                context.HandleResponse();
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                context.Response.ContentType = "application/json";
-                return context.Response.WriteAsync("{\"error\":\"Unauthorized\"}");
-            },
-
             OnMessageReceived = context =>
                {
                    if (context.Request.Cookies.ContainsKey("jwtToken")) // this cookie is assigned in "LoginAsync" endpoint
@@ -157,88 +107,52 @@ try
             },
             OnAuthenticationFailed = context =>
             {
-                logger.Error(context.Exception);
                 // This event is triggered when authentication fails.
+                logger.Error(context.Exception);
                 return Task.CompletedTask;
             }
         };
     });
 
-    //// add Cookie provider for HttpOnly data
-    //.AddCookie(options =>
-    // {
-    //     options.Events.OnRedirectToLogin = c =>
-    //     {
-    //         c.Response.StatusCode = StatusCodes.Status401Unauthorized;
-    //         return Task.FromResult<object>(null);
-    //     };
-    // });
-    var multiSchemePolicy = new AuthorizationPolicyBuilder(
-        CookieAuthenticationDefaults.AuthenticationScheme,
-        JwtBearerDefaults.AuthenticationScheme)
-      .RequireAuthenticatedUser()
-      .Build();
-
-    builder.Services.AddAuthorization(o => o.DefaultPolicy = multiSchemePolicy);
-
-
     /********************************************************************************
-    *                           Add Password strength                               *
-    *                                      &                                        *
     * Register EXTENDED ExtendIdentityUser Endpoints (Register\login\Refresh etc.)  *
+    *                                   &                                           *
+    *                           Add Password strength                               *
     *********************************************************************************/
     builder.Services.AddIdentity<ExtendIdentityUser, IdentityRole>(options =>
     {
-        //// for e.g. P@ssw0rd
-        //options.Password.RequiredLength = 8;
-        //options.Password.RequireNonAlphanumeric = true; // for e.g. !"£$%^
-        //options.Password.RequireDigit = true;
-        //options.Password.RequireLowercase = true;
-        //options.Password.RequireUppercase = true;
-        //options.User.RequireUniqueEmail = true;
-
-    })
-        .AddEntityFrameworkStores<ShareMemoriesContext>()
-        .AddSignInManager()
-        .AddRoles<IdentityRole>();
-    //.AddApiEndpoints()
-    //.AddDefaultTokenProviders();
+        // for e.g. P@ssw0rd
+        options.Password.RequiredLength = 8;
+        options.Password.RequireNonAlphanumeric = true; // for e.g. !"£$%^
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.User.RequireUniqueEmail = true;
+    }).AddEntityFrameworkStores<ShareMemoriesContext>()
+      .AddApiEndpoints()
+      .AddDefaultTokenProviders();
 
     /*************************************************************************
     *               Add Custom Authorization Policies                        *
     **************************************************************************/
-    //builder.Services.AddAuthorization(options =>
-    //{
-    //    // Policy for Admin role
-    //    options.AddPolicy("AdminPolicy", policy =>
-    //        policy.RequireRole("Admin"));
+    builder.Services.AddAuthorization(options =>
+    {
+        // Policy for Admin role
+        options.AddPolicy("AdminPolicy", policy =>
+            policy.RequireRole("Admin"));
 
-    //    // Policy for User role
-    //    options.AddPolicy("UserPolicy", policy =>
-    //        policy.RequireRole("User"));
+        // Policy for User role
+        options.AddPolicy("UserPolicy", policy =>
+            policy.RequireRole("User"));
 
-    //    // Policy for QA role
-    //    options.AddPolicy("QAPolicy", policy =>
-    //        policy.RequireRole("Qa"));
+        // Policy for QA role
+        options.AddPolicy("QAPolicy", policy =>
+            policy.RequireRole("Qa"));
 
-    //    // Policy for User or QA role
-    //    options.AddPolicy("UserOrQaPolicy", policy =>
-    //        policy.RequireRole("User", "Qa"));
-    //});
-
-    builder.Services.AddAuthorizationBuilder()
-        .AddPolicy("UserOnlyPolicy", o =>
-        {
-            o.RequireAuthenticatedUser();
-            o.RequireRole("User");
-        })
-         .AddPolicy("AdminOnlyPolicy", o =>
-         {
-             o.RequireAuthenticatedUser();
-             o.RequireRole("Admin");
-         });
-
-
+        // Policy for User or QA role
+        options.AddPolicy("UserOrQaPolicy", policy =>
+            policy.RequireRole("User", "Qa"));
+    });
 
     builder.Services.AddEndpointsApiExplorer();
     // builder.Services.AddSwaggerGen();
@@ -278,16 +192,12 @@ try
     *               Add Authorization & Authentication                       *
     **************************************************************************/
     builder.Services.AddAuthorization();
-    //builder.Services.AddAuthentication();
     
-
     var app = builder.Build();
-
 
     ///*************************************************
     ///* Apply security middleware 
     //*************************************************/
-    //app.UseMiddleware<JwtCookieMiddleware>(); // ???? needed ????
     app.UseAuthentication(); // Authenticate the token
     app.UseAuthorization();  // Authorize based on roles/policies
 
@@ -313,41 +223,25 @@ try
     app.UseHttpsRedirection();
 
     // Test authentication API when logged in
-    app.MapGet("/testAuthenticationWhenLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}")
-        .RequireAuthorization();
+    app.MapGet("/VerifyLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}")
+        .RequireAuthorization("QAPolicy")
+        .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
 
-    
-    app.MapGet("/admin-data", [Authorize(Policy = "AdminPolicy")] () =>
+    app.MapGet("/UserPolicy", () =>
     {
-        return Results.Ok("This data is accessible by Admins.");
-    });
+        return Results.Ok("This data is accessible by User");
+    })
+    .RequireAuthorization("UserPolicy")
+    .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
 
-    //app.MapGet("/userQaData", () =>
-    app.MapGet("/userPolicy", [Authorize(AuthenticationSchemes =JwtBearerDefaults.AuthenticationScheme, Policy = "UserOnlyPolicy")] () =>
-    //app.MapGet("/userQaData", [Authorize(Roles = "User")] () =>
-    {
-        return Results.Ok("This data is accessible by User Or Qa.");
-    });
-    //}).RequireAuthorization("UserOnlyPolicy");
-    //}).RequireAuthorization();
-
-    app.MapGet("/Secure", (ClaimsPrincipal user) =>
+    app.MapGet("/QAPolicy", (ClaimsPrincipal user) =>
     {
         var data = user.Identity!.Name;
-        return Results.Ok("This data is accessible by Authorize User.");
-    }).RequireAuthorization();
-    
+        return Results.Ok("This data is accessible by Authorized QA.");
+    })
+    .RequireAuthorization("QAPolicy")
+    .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
 
-    app.MapGet("/NotSecure", () =>
-    {
-        return Results.Ok("This data is accessible by everyone.");
-    });
-
-    app.MapGet("/SecureInspectClaims", [Authorize] (HttpContext httpContext) =>
-    {
-        var claims = httpContext.User.Claims.Select(c => new { c.Type, c.Value }).ToList();
-        return Results.Ok(claims);
-    });
 
     app.Run();
 }
