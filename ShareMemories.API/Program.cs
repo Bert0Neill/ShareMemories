@@ -9,18 +9,25 @@ var logger = NLog.LogManager.Setup().LoadConfigurationFromFile("nlog.config").Ge
 
 try
 {
-    // use extension methods to configure JWT, DI, Security Policy, Response caching, DbContext, Error middleware, DTO validation & Swagger
+    // use extension methods to configure JWT, DI, Security Policy, Response caching, DbContext, Error middleware, DTO validation, CORs & Swagger
     builder.Services.AddCustomServices(builder.Configuration, logger);
     builder.Services.AddCustomServicesSwagger(builder.Configuration, logger);
-
+    //builder.Services.AddCORsServices(builder.Configuration, logger);
+    
     var app = builder.Build();
+
+    //// Configure the HTTP request pipeline.
+    //app.UseCors("AllowSpecificOrigins"); // Apply the CORS policy
 
     // use extension methods to configure middleware and custom endpoints
     app.ConfigureMiddleware(app.Environment);
     app.ConfigureEndpoints();
 
 
-    // Test authentication API when logged in
+
+    /****************************************************************************************************************
+     *                                      Testing API's                                                           *
+     ****************************************************************************************************************/    
     app.MapGet("/VerifyLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}")
         .RequireAuthorization("AdminPolicy")
         .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
