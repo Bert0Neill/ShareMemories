@@ -118,7 +118,9 @@ namespace ShareMemories.API.Extensions
                 options.AddPolicy("UserPolicy", policy => policy.RequireRole("User"));
                 options.AddPolicy("QAPolicy", policy => policy.RequireRole("Qa"));
                 options.AddPolicy("UserOrQaPolicy", policy => policy.RequireRole("User", "Qa"));
-            });           
+            });
+
+            services.AddAuthorization();
         }
     }
 }

@@ -13,11 +13,9 @@ try
     builder.Services.AddCustomServices(builder.Configuration, logger);
     builder.Services.AddCustomServicesSwagger(builder.Configuration, logger);
 
-    builder.Services.AddAuthorization();
-    
     var app = builder.Build();
 
-    // use extension methods to configure middleware and endpoints
+    // use extension methods to configure middleware and custom endpoints
     app.ConfigureMiddleware(app.Environment);
     app.ConfigureEndpoints();
 
