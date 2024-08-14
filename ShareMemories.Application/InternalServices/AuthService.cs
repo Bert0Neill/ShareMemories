@@ -12,6 +12,7 @@ using ShareMemories.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using ShareMemories.Application.Interfaces;
 using System.Runtime.CompilerServices;
+using Microsoft.AspNetCore.Http;
 
 namespace ShareMemories.Infrastructure.Services
 {
@@ -20,24 +21,30 @@ namespace ShareMemories.Infrastructure.Services
     {
         // class variables
         private readonly UserManager<ExtendIdentityUser> _userManager;
+        private readonly SignInManager<ExtendIdentityUser> _signInManager;
         private readonly IConfiguration _config;
         private readonly IJwtTokenService _jwtTokenService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        private bool _isRefreshing = false;
         private const int REFRESH_TOKEN_EXPIRE_DAYS = 10;
-        private const int JWT_TOKEN_EXPIRE_MINS = 30;
-        public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService)
+        private const int JWT_TOKEN_EXPIRE_MINS = 30;        
+        public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService, SignInManager<ExtendIdentityUser> signInManager, IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _config = config;
-            _jwtTokenService = jwtTokenService; 
+            _jwtTokenService = jwtTokenService;
+            _signInManager = signInManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         #region APIs
-        public async Task<LoginRegisterResponseDto> LoginAsync(LoginUserDto user)
+        public async Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user)
         {
-            var response = new LoginRegisterResponseDto(); // "IsLoggedIn" will be false by default
+            var response = new LoginRegisterRefreshResponseDto(); // "IsLoggedIn" will be false by default
             var identityUser = await _userManager.FindByNameAsync(user.UserName);
 
-            // determine if user exists & is valid
+            // determine if user exists & passwords match
             if (identityUser is null || !(await _userManager.CheckPasswordAsync(identityUser, user.Password)))
             {
                 response.Message = "User credentials not valid";
@@ -48,11 +55,11 @@ namespace ShareMemories.Infrastructure.Services
 
             response.IsLoggedIn = true;
             response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
-            response.RefreshToken = _jwtTokenService.GenerateRefreshToken(); // generate a new refresh token the user logs in - improves security
+            response.JwtRefreshToken = _jwtTokenService.GenerateRefreshToken(); // generate a new refresh token the user logs in - improves security
             response.Message = "User logged in successfully";
 
-            // populate identityUser, so that we can update the database
-            identityUser.RefreshToken = response.RefreshToken;
+            // populate identityUser, so that we can update the database table with a new Refresh Token 
+            identityUser.RefreshToken = response.JwtRefreshToken;
             //identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // ensure that refresh token expires long after JWT bearer token
             identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // ensure that refresh token expires long after JWT bearer token
             identityUser.LastUpdated = DateTime.Now;
@@ -61,9 +68,9 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterResponseDto> RegisterUserAsync(RegisterUserDto user)
+        public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user)
         {
-            LoginRegisterResponseDto registerResponseDto = new();
+            LoginRegisterRefreshResponseDto registerResponseDto = new();
 
             // verify that Username and\or email have not already been registered
             if (await IsUsernameOrEmailTakenAsync(user.UserName, user.Email))
@@ -113,38 +120,68 @@ namespace ShareMemories.Infrastructure.Services
             return registerResponseDto;
         }
 
-        public async Task<LoginRegisterResponseDto> RefreshTokenAsync(RefreshTokenModel model)
+        public async Task<LoginRegisterRefreshResponseDto> RefreshTokenAsync(string jwtToken, string refreshToken)
         {
-            var principal = _jwtTokenService.GetPrincipalFromExpiredToken(model.JwtToken);
+            var response = new LoginRegisterRefreshResponseDto();
 
-            var response = new LoginRegisterResponseDto();
-            if (principal?.Identity?.Name is null)
-                return response;
+            try
+            {
+                if (!_isRefreshing) // stop user refresh saturation
+                {
+                    _isRefreshing = true;
+                    
+                    var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
-            var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name);
+                    // not able to retrieve user from Jwt token
+                    if (principal?.Identity?.Name is null)
+                    {
+                        await LogoutAsync(); // call logout
+                        response.Message = "Jwt Bearer not valid";
+                        return response;
+                    }
 
-            if (identityUser is null || identityUser.RefreshToken != model.RefreshToken || identityUser.RefreshTokenExpiry < DateTime.Now)
-                return response;
+                    var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name);
 
-            var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
+                    if (identityUser is null || identityUser.RefreshToken != refreshToken || identityUser.RefreshTokenExpiry < DateTime.Now)
+                    {
+                        await LogoutAsync(); // call logout
+                        response.Message = "Jwt Bearer invalid or invalid Refresh Token or Refresh Token expired - Use the login screen again";
+                        return response;
+                    }
 
-            response.IsLoggedIn = true;
-            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
-            response.RefreshToken = _jwtTokenService.GenerateRefreshToken();
+                    var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
 
-            // update AspNetUser DB table with latest details 
-            identityUser.RefreshToken = response.RefreshToken;
-            //identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // refresh token should be longer than JWT bearer token
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // testing
-            await _userManager.UpdateAsync(identityUser);
+                    response.IsLoggedIn = true;
+                    response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
+                    response.JwtRefreshToken = _jwtTokenService.GenerateRefreshToken();
 
+                    // update AspNetUser DB table with latest details 
+                    identityUser.RefreshToken = response.JwtRefreshToken;
+                    //identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // refresh token should be longer than JWT bearer token
+                    identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // testing
+                    await _userManager.UpdateAsync(identityUser);
+
+                    return response;
+                }
+            }
+            finally { _isRefreshing = false; }
+
+            // Return a response in case the token is already refreshing
+            response.Message = "Token is already refreshing.";
             return response;
+        }
+
+        public async Task LogoutAsync()
+        {
+            await _signInManager.SignOutAsync();
+
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtToken");
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtRefreshToken");
         }
 
         #endregion
 
         #region Helper Methods
-
         public async Task<bool> IsUsernameOrEmailTakenAsync(string username, string email)
         {
             var usernameTask = await _userManager.FindByNameAsync(username);

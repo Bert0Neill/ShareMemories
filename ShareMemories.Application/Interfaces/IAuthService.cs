@@ -7,9 +7,9 @@ namespace ShareMemories.Infrastructure.Interfaces
 {
     public interface IAuthService
     {
-        Task<LoginRegisterResponseDto> LoginAsync(LoginUserDto user);
-        Task<LoginRegisterResponseDto> RefreshTokenAsync(RefreshTokenModel model);
-        Task<LoginRegisterResponseDto> RegisterUserAsync(RegisterUserDto user);
-
+        Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user);
+        Task<LoginRegisterRefreshResponseDto> RefreshTokenAsync(string jwtToken, string refreshToken);
+        Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user);
+        Task LogoutAsync();
     }
 }

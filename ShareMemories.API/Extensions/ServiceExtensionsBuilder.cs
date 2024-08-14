@@ -56,6 +56,7 @@ namespace ShareMemories.API.Extensions
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                // options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; // optional
             })
             .AddJwtBearer(options =>
             {

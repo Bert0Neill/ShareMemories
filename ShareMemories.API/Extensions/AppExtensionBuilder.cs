@@ -7,7 +7,7 @@ using ShareMemories.API.Endpoints.Video;
 
 namespace ShareMemories.API.Extensions
 {
-    public static class ApplicationExtensionBuilder
+    public static class AppExtensionBuilder
     {
         public static void ConfigureMiddleware(this IApplicationBuilder app, IHostEnvironment env)
         {

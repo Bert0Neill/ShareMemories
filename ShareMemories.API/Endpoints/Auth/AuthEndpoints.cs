@@ -6,6 +6,7 @@ using ShareMemories.API.Validators;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
+using ShareMemories.Infrastructure.Services;
 using System.Text;
 
 namespace ShareMemories.API.Endpoints.Auth
@@ -45,34 +46,39 @@ namespace ShareMemories.API.Endpoints.Auth
              *******************************************************************************************************/
             group.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService, HttpContext context) =>
             {
+                const int REFRESH_TOKEN_EXPIRE_DAYS = 10;
+                const int JWT_TOKEN_EXPIRE_MINS = 30;
+
                 var loginResult = await authService.LoginAsync(user);
 
                 if (loginResult.IsLoggedIn)
                 {
-                    // Set the JWT as an HttpOnly cookie
+                    // Set the JWT as a HttpOnly cookie
                     var cookieOptionsJWT = new CookieOptions
                     {
                         HttpOnly = true,
                         IsEssential = true,
                         Secure = true, // Ensures the cookie is sent over HTTPS
                         SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-                        Expires = DateTimeOffset.UtcNow.AddMinutes(30) // Set expiration                        
+                        //Expires = DateTimeOffset.UtcNow.AddMinutes(JWT_TOKEN_EXPIRE_MINS) // Set expiration                        
+                        Expires = DateTimeOffset.UtcNow.AddSeconds(30) // Set expiration                        
                     };
-
-                    // Set the Refresh JWT as an HttpOnly cookie
+                    
+                    // Set the Refresh Token as a HttpOnly cookie
                     var cookieOptionsRefreshJWT = new CookieOptions
                     {
                         HttpOnly = true,
                         IsEssential = true,
                         Secure = true, // Ensures the cookie is sent over HTTPS
                         SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-                        Expires = DateTimeOffset.UtcNow.AddDays(10) // Set expiration
+                        //Expires = DateTimeOffset.UtcNow.AddDays(REFRESH_TOKEN_EXPIRE_DAYS) // Set expiration
+                        Expires = DateTimeOffset.UtcNow.AddSeconds(30) // Set expiration
                          
                     };
 
                     // Set the cookie in the response
                     context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, cookieOptionsJWT);
-                    context.Response.Cookies.Append("jwtRefreshToken", loginResult.RefreshToken, cookieOptionsRefreshJWT);
+                    context.Response.Cookies.Append("jwtRefreshToken", loginResult.JwtRefreshToken, cookieOptionsRefreshJWT);
 
                     //return Results.Ok(new { message = "Logged in successfully" });
                     return Results.Ok(loginResult);
@@ -93,17 +99,23 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
             * Refresh a user's login instance, without having to pass the credentials again
             *******************************************************************************************************/
-            group.MapPost("/RefreshTokenAsync", async (RefreshTokenModel refreshModel, IAuthService authService) =>
+            group.MapPost("/RefreshTokenAsync", async (IAuthService authService, HttpContext context) =>
             {
-                // apply guard rules to individual property's - could also use FluentValidator!
-                Guard.Against.Empty(refreshModel.JwtToken, nameof(refreshModel.JwtToken), "JWT must not be supplied");
-                Guard.Against.Empty(refreshModel.RefreshToken, nameof(refreshModel.RefreshToken), "Refresh token must not be supplied");
+                // verify cookies exist in request
+                if (context.Request.Cookies.ContainsKey("jwtToken") && context.Request.Cookies.ContainsKey("jwtRefreshToken"))
+                {
+                    // guard that they are not empty
+                    Guard.Against.Empty(context.Request.Cookies["jwtToken"], "JWT must not be supplied");
+                    Guard.Against.Empty(context.Request.Cookies["jwtRefreshToken"], "Refresh token must not be supplied");
+                }
+                else throw new ArgumentException("JWT Token cookie must be supplied.");
 
-                var loginResult = await authService.RefreshTokenAsync(refreshModel);
+                var loginResult = await authService.RefreshTokenAsync(context.Request.Cookies["jwtToken"]!, context.Request.Cookies["jwtRefreshToken"]!);
 
                 if (loginResult.IsLoggedIn)
                 {
-                    return Results.Ok(loginResult);
+                    //return Results.Ok(loginResult);
+                    return Results.Ok("Successfully refreshed JWT Bearer");
                 }
                 return Results.Unauthorized();
             })
@@ -119,13 +131,14 @@ namespace ShareMemories.API.Endpoints.Auth
             *                           Allow user to logout and delete their JWT Token                            *
             *******************************************************************************************************/
             // Define the logout endpoint
-            group.MapPost("/logout", (HttpContext context) =>
+            group.MapPost("/logoutAsync", async (IAuthService authService) =>
+            //group.MapPost("/logoutAsync", async (HttpContext context, IAuthService authService) =>
             {
-                // Clear the JWT cookie
-                context.Response.Cookies.Delete("jwtToken");
-                context.Response.Cookies.Delete("jwtRefreshToken");
-
-                //ToDo make DB call to remove RefreshToken & Expire Date form DB too
+                //// Clear the JWT cookie
+                //context.Response.Cookies.Delete("jwtToken");
+                //context.Response.Cookies.Delete("jwtRefreshToken");
+                
+                await authService.LogoutAsync();
 
                 return Results.Ok(new { message = "Logged out successfully" });
             })

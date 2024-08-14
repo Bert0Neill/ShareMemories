@@ -13,7 +13,8 @@ try
     builder.Services.AddCustomServices(builder.Configuration, logger);
     builder.Services.AddCustomServicesSwagger(builder.Configuration, logger);
     //builder.Services.AddCORsServices(builder.Configuration, logger);
-    
+    //var validCORs = builder.Configuration.GetSection("CORsWhitelistedDomains").Get<string[]>();
+
     var app = builder.Build();
 
     //// Configure the HTTP request pipeline.
@@ -27,12 +28,12 @@ try
 
     /****************************************************************************************************************
      *                                      Testing API's                                                           *
-     ****************************************************************************************************************/    
-    app.MapGet("/VerifyLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}")
+     ****************************************************************************************************************/
+    app.MapGet("/AdminLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}")
         .RequireAuthorization("AdminPolicy")
         .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
 
-    app.MapGet("/UserPolicy", () =>
+    app.MapGet("/UserLoggedIn", () =>
     {
         return Results.Ok("This data is accessible by User");
     })

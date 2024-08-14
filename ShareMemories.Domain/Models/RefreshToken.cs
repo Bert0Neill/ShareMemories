@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace ShareMemories.Domain.Models
 {
-    public class RefreshTokenModel
+    public class RefreshToken
     {
         public string JwtToken { get; set; }
-        public string RefreshToken { get; set; }
+        public string JwtRefreshToken { get; set; }
     }
 }
