@@ -190,7 +190,7 @@ namespace ShareMemories.Infrastructure.Services
                 var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name); // retrieve user principal
                 
                 // clear the refresh token
-                identityUser.RefreshToken = null;
+                identityUser!.RefreshToken = null;
                 identityUser.RefreshTokenExpiry = DateTime.MinValue;                
 
                 var result = await _userManager.UpdateAsync(identityUser); // Update the user in the database
@@ -199,7 +199,7 @@ namespace ShareMemories.Infrastructure.Services
                 if (!result.Succeeded)
                 {
                     response.IsLoggedIn = true; // user is still logged in
-                    response.Message = "Failed to delete refresh token from database";
+                    response.Message = "Failed to delete Refresh Token";
                 }
                 else
                 {

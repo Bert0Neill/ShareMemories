@@ -1,26 +1,8 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using ShareMemories.API.Validators;
-using ShareMemories.Application.Interfaces;
-using ShareMemories.Application.InternalServices;
-using ShareMemories.Domain.Entities;
-using ShareMemories.Infrastructure.Database;
-using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
-using ShareMemories.Infrastructure.ExternalServices.Security;
-using ShareMemories.Infrastructure.Interfaces;
-using ShareMemories.Infrastructure.Services;
-using System;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.OpenApi.Models;
 
 namespace ShareMemories.API.Extensions.ServiceBuilder
 {
-    public static class ServiceExtensionsSwaggerBuilder
+    public static class ServiceExtensionsBuilderSwagger
     {
         public static void AddCustomServicesSwagger(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
         {

@@ -1,6 +1,6 @@
 ﻿namespace ShareMemories.API.Extensions.ServiceBuilder
 {
-    public static class ServiceExtensionsCORs
+    public static class ServiceExtensions_CORs
     {
         public static void AddCORsServices(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
         {
@@ -20,6 +20,8 @@
                                      .AllowCredentials(); // Allow credentials (cookies)
                     });
             });
+
+            services.AddCors();
         }
     }
 }

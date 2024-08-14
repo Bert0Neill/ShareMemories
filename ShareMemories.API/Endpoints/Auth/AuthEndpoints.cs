@@ -124,9 +124,12 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 VerifyRequestCookies(context);
 
-                await authService.LogoutAsync(context.Request.Cookies["jwtToken"]!);
+                var response = await authService.LogoutAsync(context.Request.Cookies["jwtToken"]!);
 
-                return Results.Ok(new { message = "Logged out successfully" });
+                // check if still logged in - an issue
+                if (!response.IsLoggedIn) return Results.Ok(new { message = response.Message });
+                else return Results.BadRequest(new { message = response.Message });
+
             })
             .WithName("Logout")
             .WithOpenApi(x => new OpenApiOperation(x)

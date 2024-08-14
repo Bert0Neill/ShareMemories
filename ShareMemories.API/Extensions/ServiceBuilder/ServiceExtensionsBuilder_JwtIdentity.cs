@@ -1,62 +1,21 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
-using ShareMemories.API.Validators;
-using ShareMemories.Application.Interfaces;
-using ShareMemories.Application.InternalServices;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Infrastructure.Database;
-using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
-using ShareMemories.Infrastructure.ExternalServices.Security;
-using ShareMemories.Infrastructure.Interfaces;
-using ShareMemories.Infrastructure.Services;
 using System.Text;
 
 namespace ShareMemories.API.Extensions.ServiceBuilder
 {
-    public static class ServiceExtensionsBuilder
+    public static class ServiceExtensionsBuilderJwtIdentity
     {
-        public static void AddCustomServices(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
+        public static void AddServicesJwtIdentity(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
         {
-            // Add global error handler middleware
-            services.AddProblemDetails();
-            services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
-
-            // Add DTO model validation
-            services.AddValidatorsFromAssemblyContaining(typeof(PictureValidator));
-            services.AddValidatorsFromAssemblyContaining(typeof(LoginUserValidator));
-
-            // Register DbContext
-            services.AddDbContext<ShareMemoriesContext>(db =>
-                db.UseSqlServer(configuration.GetConnectionString("DefaultConnection")),
-                ServiceLifetime.Singleton);
-
-            // Dependency Injection
-            services.AddScoped<IPictureService, PictureService>();          // Application
-            services.AddScoped<IAuthService, AuthService>();                // Application
-            services.AddScoped<IPictureRepository, PictureRepository>();    // Infrastructure
-            services.AddScoped<IJwtTokenService, JwtTokenService>();        // Infrastructure
-
-            // Response output caching
-            services.AddOutputCache(options =>
-            {
-                options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(5)));
-                options.AddPolicy("Expire30", builder => builder.Expire(TimeSpan.FromSeconds(30)));
-                options.AddPolicy("Expire60", builder => builder.Expire(TimeSpan.FromSeconds(60)));
-            });
-
-            // Register output caching
-            services.AddOutputCache();
-
             // Add Bearer JWT Authentication
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                // options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; // optional
             })
             .AddJwtBearer(options =>
             {
