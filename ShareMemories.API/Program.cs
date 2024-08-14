@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using NLog;
-using ShareMemories.API.Extensions;
+using ShareMemories.API.Extensions.AppBuilder;
+using ShareMemories.API.Extensions.ServiceBuilder;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);

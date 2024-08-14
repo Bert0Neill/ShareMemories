@@ -10,6 +10,6 @@ namespace ShareMemories.Infrastructure.Interfaces
         Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user);
         Task<LoginRegisterRefreshResponseDto> RefreshTokenAsync(string jwtToken, string refreshToken);
         Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user);
-        Task LogoutAsync();
+        Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken);
     }
 }

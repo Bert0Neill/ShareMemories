@@ -18,7 +18,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ShareMemories.API.Extensions
+namespace ShareMemories.API.Extensions.ServiceBuilder
 {
     public static class ServiceExtensionsSwaggerBuilder
     {
@@ -31,7 +31,7 @@ namespace ShareMemories.API.Extensions
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Version = "v1" });
 
-                c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
                     //Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
@@ -41,7 +41,7 @@ namespace ShareMemories.API.Extensions
                     In = ParameterLocation.Header
                 });
 
-                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
         {
             {
                 new OpenApiSecurityScheme

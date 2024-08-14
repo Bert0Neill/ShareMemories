@@ -57,11 +57,12 @@ namespace ShareMemories.Infrastructure.Services
             response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
             response.JwtRefreshToken = _jwtTokenService.GenerateRefreshToken(); // generate a new refresh token the user logs in - improves security
             response.Message = "User logged in successfully";
+            response.JwtRefreshTokenExpire = DateTimeOffset.UtcNow.AddDays(REFRESH_TOKEN_EXPIRE_DAYS).UtcDateTime;
+            response.JwtTokenExpire = DateTimeOffset.UtcNow.AddMinutes(JWT_TOKEN_EXPIRE_MINS).UtcDateTime;
 
             // populate identityUser, so that we can update the database table with a new Refresh Token 
             identityUser.RefreshToken = response.JwtRefreshToken;
-            //identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // ensure that refresh token expires long after JWT bearer token
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // ensure that refresh token expires long after JWT bearer token
+            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // ensure that refresh token expires long after JWT bearer token            
             identityUser.LastUpdated = DateTime.Now;
             await _userManager.UpdateAsync(identityUser);
 
@@ -135,7 +136,7 @@ namespace ShareMemories.Infrastructure.Services
                     // not able to retrieve user from Jwt token
                     if (principal?.Identity?.Name is null)
                     {
-                        await LogoutAsync(); // call logout
+                        await LogoutAsync(jwtToken); // call logout
                         response.Message = "Jwt Bearer not valid";
                         return response;
                     }
@@ -144,7 +145,7 @@ namespace ShareMemories.Infrastructure.Services
 
                     if (identityUser is null || identityUser.RefreshToken != refreshToken || identityUser.RefreshTokenExpiry < DateTime.Now)
                     {
-                        await LogoutAsync(); // call logout
+                        await LogoutAsync(jwtToken); // call logout
                         response.Message = "Jwt Bearer invalid or invalid Refresh Token or Refresh Token expired - Use the login screen again";
                         return response;
                     }
@@ -171,12 +172,45 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task LogoutAsync()
+        public async Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken)
         {
-            await _signInManager.SignOutAsync();
+            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully logged out" }; // default message
 
-            _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtToken");
-            _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtRefreshToken");
+            var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
+
+            // not able to retrieve user from Jwt bearer token
+            if (principal?.Identity?.Name is null)
+            {
+                response.IsLoggedIn = true; // user is still logged in
+                response.Message = "Jwt Bearer not valid";
+                return response;
+            }
+            else
+            {
+                var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name); // retrieve user principal
+                
+                // clear the refresh token
+                identityUser.RefreshToken = null;
+                identityUser.RefreshTokenExpiry = DateTime.MinValue;                
+
+                var result = await _userManager.UpdateAsync(identityUser); // Update the user in the database
+
+                // handle a database fail
+                if (!result.Succeeded)
+                {
+                    response.IsLoggedIn = true; // user is still logged in
+                    response.Message = "Failed to delete refresh token from database";
+                }
+                else
+                {
+                    // remove cookies form response to client
+                    await _signInManager.SignOutAsync();
+                    _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtToken");
+                    _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtRefreshToken");
+                }
+            }
+
+            return response;
         }
 
         #endregion

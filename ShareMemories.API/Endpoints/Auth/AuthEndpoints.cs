@@ -1,13 +1,8 @@
 ﻿using Ardalis.GuardClauses;
-using Azure;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
 using ShareMemories.Domain.DTOs;
-using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
-using ShareMemories.Infrastructure.Services;
-using System.Text;
 
 namespace ShareMemories.API.Endpoints.Auth
 {
@@ -46,9 +41,6 @@ namespace ShareMemories.API.Endpoints.Auth
              *******************************************************************************************************/
             group.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService, HttpContext context) =>
             {
-                const int REFRESH_TOKEN_EXPIRE_DAYS = 10;
-                const int JWT_TOKEN_EXPIRE_MINS = 30;
-
                 var loginResult = await authService.LoginAsync(user);
 
                 if (loginResult.IsLoggedIn)
@@ -60,8 +52,7 @@ namespace ShareMemories.API.Endpoints.Auth
                         IsEssential = true,
                         Secure = true, // Ensures the cookie is sent over HTTPS
                         SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-                        //Expires = DateTimeOffset.UtcNow.AddMinutes(JWT_TOKEN_EXPIRE_MINS) // Set expiration                        
-                        Expires = DateTimeOffset.UtcNow.AddSeconds(30) // Set expiration                        
+                        Expires = loginResult.JwtTokenExpire
                     };
                     
                     // Set the Refresh Token as a HttpOnly cookie
@@ -71,8 +62,7 @@ namespace ShareMemories.API.Endpoints.Auth
                         IsEssential = true,
                         Secure = true, // Ensures the cookie is sent over HTTPS
                         SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-                        //Expires = DateTimeOffset.UtcNow.AddDays(REFRESH_TOKEN_EXPIRE_DAYS) // Set expiration
-                        Expires = DateTimeOffset.UtcNow.AddSeconds(30) // Set expiration
+                        Expires = loginResult.JwtRefreshTokenExpire
                          
                     };
 
@@ -80,8 +70,11 @@ namespace ShareMemories.API.Endpoints.Auth
                     context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, cookieOptionsJWT);
                     context.Response.Cookies.Append("jwtRefreshToken", loginResult.JwtRefreshToken, cookieOptionsRefreshJWT);
 
-                    //return Results.Ok(new { message = "Logged in successfully" });
+#if DEBUG
                     return Results.Ok(loginResult);
+#else
+                    return Results.Ok(new { message = "Logged in successfully" });
+#endif
                 }
 
                 return Results.BadRequest("User credentials could not be verified.");
@@ -101,21 +94,17 @@ namespace ShareMemories.API.Endpoints.Auth
             *******************************************************************************************************/
             group.MapPost("/RefreshTokenAsync", async (IAuthService authService, HttpContext context) =>
             {
-                // verify cookies exist in request
-                if (context.Request.Cookies.ContainsKey("jwtToken") && context.Request.Cookies.ContainsKey("jwtRefreshToken"))
-                {
-                    // guard that they are not empty
-                    Guard.Against.Empty(context.Request.Cookies["jwtToken"], "JWT must not be supplied");
-                    Guard.Against.Empty(context.Request.Cookies["jwtRefreshToken"], "Refresh token must not be supplied");
-                }
-                else throw new ArgumentException("JWT Token cookie must be supplied.");
+                VerifyRequestCookies(context);
 
                 var loginResult = await authService.RefreshTokenAsync(context.Request.Cookies["jwtToken"]!, context.Request.Cookies["jwtRefreshToken"]!);
 
                 if (loginResult.IsLoggedIn)
                 {
-                    //return Results.Ok(loginResult);
+#if DEBUG
+                    return Results.Ok(loginResult);
+#else
                     return Results.Ok("Successfully refreshed JWT Bearer");
+#endif                    
                 }
                 return Results.Unauthorized();
             })
@@ -131,14 +120,11 @@ namespace ShareMemories.API.Endpoints.Auth
             *                           Allow user to logout and delete their JWT Token                            *
             *******************************************************************************************************/
             // Define the logout endpoint
-            group.MapPost("/logoutAsync", async (IAuthService authService) =>
-            //group.MapPost("/logoutAsync", async (HttpContext context, IAuthService authService) =>
+            group.MapPost("/logoutAsync", async (HttpContext context, IAuthService authService) =>            
             {
-                //// Clear the JWT cookie
-                //context.Response.Cookies.Delete("jwtToken");
-                //context.Response.Cookies.Delete("jwtRefreshToken");
-                
-                await authService.LogoutAsync();
+                VerifyRequestCookies(context);
+
+                await authService.LogoutAsync(context.Request.Cookies["jwtToken"]!);
 
                 return Results.Ok(new { message = "Logged out successfully" });
             })
@@ -149,6 +135,18 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Logout user and delete their cached JWT token.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
+        }
+
+        private static void VerifyRequestCookies(HttpContext context)
+        {
+            // verify cookies exist in request
+            if (context.Request.Cookies.ContainsKey("jwtToken") && context.Request.Cookies.ContainsKey("jwtRefreshToken"))
+            {
+                // guard that they are not empty
+                Guard.Against.Empty(context.Request.Cookies["jwtToken"], "JWT must not be supplied");
+                Guard.Against.Empty(context.Request.Cookies["jwtRefreshToken"], "Refresh token must not be supplied");
+            }
+            else throw new ArgumentException("JWT Token cookie must be supplied.");
         }
     }
 }

@@ -10,5 +10,8 @@ namespace ShareMemories.Domain.Models
     {
         public string JwtToken { get; set; }
         public string JwtRefreshToken { get; set; }
+
+        public DateTime JwtRefreshTokenExpire { get; set; } = DateTime.Now;
+        public DateTime JwtTokenExpire { get; set; } = DateTime.Now;
     }
 }

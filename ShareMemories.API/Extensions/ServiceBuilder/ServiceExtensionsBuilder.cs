@@ -15,7 +15,7 @@ using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
 using System.Text;
 
-namespace ShareMemories.API.Extensions
+namespace ShareMemories.API.Extensions.ServiceBuilder
 {
     public static class ServiceExtensionsBuilder
     {

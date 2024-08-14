@@ -5,7 +5,7 @@ using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.Picture;
 using ShareMemories.API.Endpoints.Video;
 
-namespace ShareMemories.API.Extensions
+namespace ShareMemories.API.Extensions.AppBuilder
 {
     public static class AppExtensionBuilder
     {
