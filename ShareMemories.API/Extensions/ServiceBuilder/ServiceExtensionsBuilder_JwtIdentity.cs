@@ -36,7 +36,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 {
                     OnMessageReceived = context =>
                     {
-                        if (context.Request.Cookies.ContainsKey("jwtToken")) // this cookie is assigned in "LoginAsync" endpoint
+                        if (context.Request.Cookies.ContainsKey("jwtToken")) // this cookie is assigned after "LoginAsync" endpoint called
                         {
                             context.Token = context.Request.Cookies["jwtToken"];
                         }

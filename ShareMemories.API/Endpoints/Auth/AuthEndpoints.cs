@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
-using ShareMemories.Application.Interfaces;
-using ShareMemories.Application.InternalServices;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Infrastructure.Interfaces;
 
@@ -40,7 +38,6 @@ namespace ShareMemories.API.Endpoints.Auth
             // !!! Password validation done by builder.service.AddIdentity in Programs.cs
             .AddEndpointFilter<GenericValidationFilter<RegisterUserValidator, RegisterUserDto>>(); // apply fluent validation to DTO model from client and pass back broken rules    
 
-
             /*******************************************************************************************************
              * Login an already registered user
              *******************************************************************************************************/
@@ -50,26 +47,8 @@ namespace ShareMemories.API.Endpoints.Auth
 
                 if (loginResult.IsLoggedIn)
                 {
-                    // Set the JWT as a HttpOnly cookie
-                    var cookieOptionsJWT = new CookieOptions
-                    {
-                        HttpOnly = true,
-                        IsEssential = true,
-                        Secure = true, // Ensures the cookie is sent over HTTPS
-                        SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-                        Expires = loginResult.JwtTokenExpire
-                    };
-
-                    // Set the Refresh Token as a HttpOnly cookie
-                    var cookieOptionsRefreshJWT = new CookieOptions
-                    {
-                        HttpOnly = true,
-                        IsEssential = true,
-                        Secure = true, // Ensures the cookie is sent over HTTPS
-                        SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-                        Expires = loginResult.JwtRefreshTokenExpire
-
-                    };
+                    CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;
+                    GenerateCookieOptions(loginResult, out cookieOptionsJWT, out cookieOptionsRefreshJWT);
 
                     // Set the cookie in the response
                     context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, cookieOptionsJWT);
@@ -105,6 +84,12 @@ namespace ShareMemories.API.Endpoints.Auth
 
                 if (loginResult.IsLoggedIn)
                 {
+                    // reset the cookies in the response
+                    CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;
+                    GenerateCookieOptions(loginResult, out cookieOptionsJWT, out cookieOptionsRefreshJWT);                    
+
+                    context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, cookieOptionsJWT);
+                    context.Response.Cookies.Append("jwtRefreshToken", loginResult.JwtRefreshToken, cookieOptionsRefreshJWT);
 #if DEBUG
                     return Results.Ok(loginResult); // testing with JWT Token in Swagger - development ONLY!!!
 #else
@@ -175,6 +160,30 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Revokes the JWT refresh token for the specified user.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
+        }
+
+        private static void GenerateCookieOptions(LoginRegisterRefreshResponseDto loginResult, out CookieOptions cookieOptionsJWT, out CookieOptions cookieOptionsRefreshJWT)
+        {
+            // Set the JWT as a HttpOnly cookie
+            cookieOptionsJWT = new CookieOptions
+            {
+                HttpOnly = true,
+                IsEssential = true,
+                Secure = true, // Ensures the cookie is sent over HTTPS
+                SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
+                Expires = loginResult.JwtTokenExpire
+            };
+
+            // Set the Refresh Token as a HttpOnly cookie
+            cookieOptionsRefreshJWT = new CookieOptions
+            {
+                HttpOnly = true,
+                IsEssential = true,
+                Secure = true, // Ensures the cookie is sent over HTTPS
+                SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
+                Expires = loginResult.JwtRefreshTokenExpire
+
+            };
         }
 
         private static void VerifyRequestCookiesExist(HttpContext context)

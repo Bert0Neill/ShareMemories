@@ -46,6 +46,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Postman", "Postman", "{0B19
 		..\..\Users\oneillb\Downloads\JWT Authentication.postman_collection.json = ..\..\Users\oneillb\Downloads\JWT Authentication.postman_collection.json
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Twillo", "Twillo", "{4570CBF4-4C79-4A4B-8F2A-8DDDEA7C685C}"
+	ProjectSection(SolutionItems) = preProject
+		Account Details.txt = Account Details.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +98,7 @@ Global
 		{D9287A43-8F76-4D41-B2E8-D66602ABB512} = {97652883-C37C-4861-9E9D-940102A5016D}
 		{AAF147C2-2D16-4534-AC9C-52940210CB67} = {E2F8ECA4-6490-4D42-9E2A-A128EDFD2FC3}
 		{0B19BF79-6032-44D2-9382-0F0575A08354} = {E4C380F1-10FC-4387-84DF-B4703AA4E6BF}
+		{4570CBF4-4C79-4A4B-8F2A-8DDDEA7C685C} = {E4C380F1-10FC-4387-84DF-B4703AA4E6BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B6D2A769-3220-41F8-BDC6-26458765B5A8}
