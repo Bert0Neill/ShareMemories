@@ -10,6 +10,7 @@ namespace ShareMemories.Domain.DTOs
     public class LoginRegisterRefreshResponseDto : RefreshToken
     {
         public bool IsLoggedIn { get; set; } = false;
+        public bool IsRefreshRevoked { get; set; } = true;
         public string Message { get; set; } = string.Empty;
     }
 }

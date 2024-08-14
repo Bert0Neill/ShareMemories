@@ -62,8 +62,9 @@ namespace ShareMemories.Infrastructure.Services
 
             // populate identityUser, so that we can update the database table with a new Refresh Token 
             identityUser.RefreshToken = response.JwtRefreshToken;
-            identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // ensure that refresh token expires long after JWT bearer token            
-            identityUser.LastUpdated = DateTime.Now;
+            identityUser.RefreshTokenExpiry = response.JwtRefreshTokenExpire; // ensure that refresh token expires long after JWT bearer token                        
+            identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
+
             await _userManager.UpdateAsync(identityUser);
 
             return response;
@@ -88,7 +89,7 @@ namespace ShareMemories.Infrastructure.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 DateOfBirth = user.DateOfBirth,
-                LastUpdated = DateTime.Now
+                LastUpdated = DateTimeOffset.UtcNow.UtcDateTime
             };
 
             var result = await _userManager.CreateAsync(identityUser, user.Password);
@@ -158,8 +159,9 @@ namespace ShareMemories.Infrastructure.Services
 
                     // update AspNetUser DB table with latest details 
                     identityUser.RefreshToken = response.JwtRefreshToken;
-                    //identityUser.RefreshTokenExpiry = DateTime.Now.AddDays(REFRESH_TOKEN_EXPIRE_DAYS); // refresh token should be longer than JWT bearer token
-                    identityUser.RefreshTokenExpiry = DateTime.Now.AddSeconds(100); // testing
+                    identityUser.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(REFRESH_TOKEN_EXPIRE_DAYS).UtcDateTime; // refresh token should be longer than JWT bearer token
+                    identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
+
                     await _userManager.UpdateAsync(identityUser);
 
                     return response;
@@ -182,8 +184,7 @@ namespace ShareMemories.Infrastructure.Services
             if (principal?.Identity?.Name is null)
             {
                 response.IsLoggedIn = true; // user is still logged in
-                response.Message = "Jwt Bearer not valid";
-                return response;
+                response.Message = "Jwt Bearer not valid, during logout process";                
             }
             else
             {
@@ -191,7 +192,8 @@ namespace ShareMemories.Infrastructure.Services
                 
                 // clear the refresh token
                 identityUser!.RefreshToken = null;
-                identityUser.RefreshTokenExpiry = DateTime.MinValue;                
+                identityUser.RefreshTokenExpiry = null;
+                identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
 
                 var result = await _userManager.UpdateAsync(identityUser); // Update the user in the database
 
@@ -199,7 +201,48 @@ namespace ShareMemories.Infrastructure.Services
                 if (!result.Succeeded)
                 {
                     response.IsLoggedIn = true; // user is still logged in
-                    response.Message = "Failed to delete Refresh Token";
+                    response.Message = "Failed to delete Refresh Token, during logout process";
+                }
+                else
+                {
+                    // remove cookies form response to client
+                    await _signInManager.SignOutAsync();
+                    _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtToken");
+                    _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtRefreshToken");
+                }
+            }
+
+            return response;
+        }
+
+        public async Task<LoginRegisterRefreshResponseDto> RevokeRefreshTokenAsync(string jwtToken)
+        {
+            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked Refresh Token" }; // default message
+
+            var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
+
+            // not able to retrieve user from Jwt bearer token
+            if (principal?.Identity?.Name is null)
+            {
+                response.IsRefreshRevoked = false; 
+                response.Message = "Jwt Bearer not valid, during revoke process";
+            }
+            else
+            {
+                var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name); // retrieve user principal
+
+                // clear the refresh token
+                identityUser!.RefreshToken = null;
+                identityUser.RefreshTokenExpiry = null;
+                identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
+
+                var result = await _userManager.UpdateAsync(identityUser);
+
+                // handle a database fail
+                if (!result.Succeeded)
+                {
+                    response.IsRefreshRevoked = false;
+                    response.Message = "Failed to revoke Refresh Token, during revoke process";
                 }
                 else
                 {

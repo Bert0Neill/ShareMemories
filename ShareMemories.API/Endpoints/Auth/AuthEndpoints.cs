@@ -1,6 +1,10 @@
 ﻿using Ardalis.GuardClauses;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
+using ShareMemories.Application.InternalServices;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Infrastructure.Interfaces;
 
@@ -94,7 +98,7 @@ namespace ShareMemories.API.Endpoints.Auth
             *******************************************************************************************************/
             group.MapPost("/RefreshTokenAsync", async (IAuthService authService, HttpContext context) =>
             {
-                VerifyRequestCookies(context);
+                VerifyRequestCookiesExist(context);
 
                 var loginResult = await authService.RefreshTokenAsync(context.Request.Cookies["jwtToken"]!, context.Request.Cookies["jwtRefreshToken"]!);
 
@@ -109,6 +113,8 @@ namespace ShareMemories.API.Endpoints.Auth
                 return Results.Unauthorized();
             })
             .WithName("RefreshTokenAsync")
+            .RequireAuthorization()
+            .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "Refresh Token",
@@ -120,9 +126,9 @@ namespace ShareMemories.API.Endpoints.Auth
             *                           Allow user to logout and delete their JWT Token                            *
             *******************************************************************************************************/
             // Define the logout endpoint
-            group.MapPost("/logoutAsync", async (HttpContext context, IAuthService authService) =>            
+            group.MapPost("/LogoutAsync", async (HttpContext context, IAuthService authService) =>            
             {
-                VerifyRequestCookies(context);
+                VerifyRequestCookiesExist(context);
 
                 var response = await authService.LogoutAsync(context.Request.Cookies["jwtToken"]!);
 
@@ -132,15 +138,42 @@ namespace ShareMemories.API.Endpoints.Auth
 
             })
             .WithName("Logout")
+            .RequireAuthorization()
+            .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "Logout user",
                 Description = "Logout user and delete their cached JWT token.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
+
+            /*******************************************************************************************************
+             *          Allow user to revoke the Refresh Token if they think it has been compromised               *
+             *******************************************************************************************************/
+            group.MapPost("/RevokeAsync", async (HttpContext context, IAuthService authService) =>
+            {
+                VerifyRequestCookiesExist(context);
+
+                // Revoke the Refresh Token
+                var response = await authService.RevokeRefreshTokenAsync(context.Request.Cookies["jwtToken"]!);
+
+                // was the Refresh Token revoked successfully
+                if (!response.IsRefreshRevoked) return Results.NotFound(response.Message);
+                else return Results.Ok(response.Message);
+
+            })
+            .WithName("Revoke")
+            .RequireAuthorization()
+            .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+           .WithOpenApi(x => new OpenApiOperation(x)
+           {
+               Summary = "Revoke JWT Token",
+               Description = "Revokes the JWT refresh token for the specified user.",
+               Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+           });
         }
 
-        private static void VerifyRequestCookies(HttpContext context)
+        private static void VerifyRequestCookiesExist(HttpContext context)
         {
             // verify cookies exist in request
             if (context.Request.Cookies.ContainsKey("jwtToken") && context.Request.Cookies.ContainsKey("jwtRefreshToken"))
