@@ -42,6 +42,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.2) API", "1.2) API", "{AAF147C2-2D16-4534-AC9C-52940210CB67}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Postman", "Postman", "{0B19BF79-6032-44D2-9382-0F0575A08354}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\Users\oneillb\Downloads\JWT Authentication.postman_collection.json = ..\..\Users\oneillb\Downloads\JWT Authentication.postman_collection.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
