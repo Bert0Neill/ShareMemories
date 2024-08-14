@@ -1,18 +1,12 @@
-﻿using ShareMemories.Domain.DTOs;
-using ShareMemories.Domain.Models;
-using ShareMemories.Infrastructure.Interfaces;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.Extensions.Configuration;
-using ShareMemories.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using ShareMemories.Application.Interfaces;
-using System.Runtime.CompilerServices;
-using Microsoft.AspNetCore.Http;
+using ShareMemories.Domain.DTOs;
+using ShareMemories.Domain.Entities;
+using ShareMemories.Infrastructure.Interfaces;
+using System.Text;
 
 namespace ShareMemories.Infrastructure.Services
 {
@@ -67,8 +61,10 @@ namespace ShareMemories.Infrastructure.Services
 
             await _userManager.UpdateAsync(identityUser);
 
+            UpdateResponseTokens(response);
+
             return response;
-        }
+        }     
 
         public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user)
         {
@@ -163,6 +159,14 @@ namespace ShareMemories.Infrastructure.Services
                     identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
 
                     await _userManager.UpdateAsync(identityUser);
+
+                    UpdateResponseTokens(response);
+
+                    //// reset the cookies in the response
+                    //CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;
+                    //GenerateCookieOptions(response.JwtTokenExpire, response.JwtRefreshTokenExpire, out cookieOptionsJWT, out cookieOptionsRefreshJWT);
+                    //_httpContextAccessor.HttpContext.Response.Cookies.Append("jwtToken", response.JwtToken, cookieOptionsJWT);
+                    //_httpContextAccessor.HttpContext.Response.Cookies.Append("jwtRefreshToken", response.JwtRefreshToken, cookieOptionsRefreshJWT);
 
                     return response;
                 }
@@ -266,6 +270,39 @@ namespace ShareMemories.Infrastructure.Services
         #endregion
 
         #region Helper Methods
+
+        private void UpdateResponseTokens(LoginRegisterRefreshResponseDto response)
+        {
+            // reset the cookies in the response
+            CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;
+            GenerateCookieOptions(response.JwtTokenExpire, response.JwtRefreshTokenExpire, out cookieOptionsJWT, out cookieOptionsRefreshJWT);
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtToken", response.JwtToken, cookieOptionsJWT);
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtRefreshToken", response.JwtRefreshToken, cookieOptionsRefreshJWT);
+        }
+
+        private static void GenerateCookieOptions(DateTimeOffset JwtTokenExpire, DateTimeOffset JwtRefreshTokenExpire, out CookieOptions cookieOptionsJWT, out CookieOptions cookieOptionsRefreshJWT)
+        {
+            // Set the JWT as a HttpOnly cookie
+            cookieOptionsJWT = new CookieOptions
+            {
+                HttpOnly = true,
+                IsEssential = true,
+                Secure = true, // Ensures the cookie is sent over HTTPS
+                SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
+                Expires = JwtTokenExpire
+            };
+
+            // Set the Refresh Token as a HttpOnly cookie
+            cookieOptionsRefreshJWT = new CookieOptions
+            {
+                HttpOnly = true,
+                IsEssential = true,
+                Secure = true, // Ensures the cookie is sent over HTTPS
+                SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
+                Expires = JwtRefreshTokenExpire
+
+            };
+        }
         public async Task<bool> IsUsernameOrEmailTakenAsync(string username, string email)
         {
             var usernameTask = await _userManager.FindByNameAsync(username);
