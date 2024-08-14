@@ -8,7 +8,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
         {
             services.AddEndpointsApiExplorer();
 
-            // allow Swagger to use JWT Bearer Tokens when calling secure API endpoints
+            // allow Swagger to use JWT Bearer Tokens when calling secure API endpoints and not have to enter the text "Bearer"
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Version = "v1" });
@@ -16,8 +16,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
-                    //Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-                    Type = SecuritySchemeType.ApiKey,
+                    Type = SecuritySchemeType.Http,
                     BearerFormat = "JWT",
                     Scheme = "Bearer",
                     In = ParameterLocation.Header
