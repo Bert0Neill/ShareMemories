@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
+using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Infrastructure.Interfaces;
@@ -11,7 +12,7 @@ using ShareMemories.Infrastructure.Interfaces;
 namespace ShareMemories.API.Endpoints.Auth
 {
     public static class AuthEndpoints
-    {        
+    {
         public static void MapAuthEndpoints(this IEndpointRouteBuilder routes)
         {
             var group = routes.MapGroup("auths")
@@ -20,13 +21,13 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              * Register a new user (adding FluentValidator to ensure data integrity from client)
              *******************************************************************************************************/
-            group.MapPost("/RegisterAsync", async (RegisterUserDto user, IAuthService authService) =>
+            group.MapPost("/RegisterAsync", async Task<Results<Ok<string>, BadRequest<string>>> (RegisterUserDto user, IAuthService authService) =>
             {
                 var result = await authService.RegisterUserAsync(user);
 
-                if (result.IsLoggedIn) return Results.Ok("Successfully registered, you can now login.");                
-                else return Results.BadRequest(new { Errors = result.Message });
-                
+                if (result.IsLoggedIn) return TypedResults.Ok("Successfully registered, you can now login.");
+                else return TypedResults.BadRequest(result.Message);
+
             }).WithName("RegisterAsync")
               .WithOpenApi(x => new OpenApiOperation(x)
               {
@@ -58,7 +59,7 @@ namespace ShareMemories.API.Endpoints.Auth
                         SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
                         Expires = loginResult.JwtTokenExpire
                     };
-                    
+
                     // Set the Refresh Token as a HttpOnly cookie
                     var cookieOptionsRefreshJWT = new CookieOptions
                     {
@@ -67,7 +68,7 @@ namespace ShareMemories.API.Endpoints.Auth
                         Secure = true, // Ensures the cookie is sent over HTTPS
                         SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
                         Expires = loginResult.JwtRefreshTokenExpire
-                         
+
                     };
 
                     // Set the cookie in the response
@@ -75,7 +76,7 @@ namespace ShareMemories.API.Endpoints.Auth
                     context.Response.Cookies.Append("jwtRefreshToken", loginResult.JwtRefreshToken, cookieOptionsRefreshJWT);
 
 #if DEBUG
-                    return Results.Ok(loginResult);
+                    return Results.Ok(loginResult); // testing with JWT Token in Swagger - development ONLY!!!
 #else
                     return Results.Ok(new { message = "Logged in successfully" });
 #endif
@@ -105,7 +106,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 if (loginResult.IsLoggedIn)
                 {
 #if DEBUG
-                    return Results.Ok(loginResult);
+                    return Results.Ok(loginResult); // testing with JWT Token in Swagger - development ONLY!!!
 #else
                     return Results.Ok("Successfully refreshed JWT Bearer");
 #endif                    
@@ -126,15 +127,18 @@ namespace ShareMemories.API.Endpoints.Auth
             *                           Allow user to logout and delete their JWT Token                            *
             *******************************************************************************************************/
             // Define the logout endpoint
-            group.MapPost("/LogoutAsync", async (HttpContext context, IAuthService authService) =>            
+            group.MapPost("/LogoutAsync", async Task<Results<Ok<string>, NotFound<string>>> (HttpContext context, IAuthService authService) =>
             {
                 VerifyRequestCookiesExist(context);
 
                 var response = await authService.LogoutAsync(context.Request.Cookies["jwtToken"]!);
 
-                // check if still logged in - an issue
-                if (!response.IsLoggedIn) return Results.Ok(new { message = response.Message });
-                else return Results.BadRequest(new { message = response.Message });
+                //// check if still logged in - an issue
+                //if (!response.IsLoggedIn) return Results.Ok(new { message = response.Message });
+                //else return Results.BadRequest(new { message = response.Message });
+
+                if (!response.IsLoggedIn) return TypedResults.Ok(response.Message);
+                else return TypedResults.NotFound(response.Message);
 
             })
             .WithName("Logout")
@@ -150,7 +154,7 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              *          Allow user to revoke the Refresh Token if they think it has been compromised               *
              *******************************************************************************************************/
-            group.MapPost("/RevokeAsync", async (HttpContext context, IAuthService authService) =>
+            group.MapPost("/RevokeAsync", async Task<Results<Ok<string>, NotFound<string>>>  (HttpContext context, IAuthService authService) =>
             {
                 VerifyRequestCookiesExist(context);
 
@@ -158,19 +162,19 @@ namespace ShareMemories.API.Endpoints.Auth
                 var response = await authService.RevokeRefreshTokenAsync(context.Request.Cookies["jwtToken"]!);
 
                 // was the Refresh Token revoked successfully
-                if (!response.IsRefreshRevoked) return Results.NotFound(response.Message);
-                else return Results.Ok(response.Message);
+                if (!response.IsRefreshRevoked) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
 
             })
             .WithName("Revoke")
             .RequireAuthorization()
             .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
-           .WithOpenApi(x => new OpenApiOperation(x)
-           {
-               Summary = "Revoke JWT Token",
-               Description = "Revokes the JWT refresh token for the specified user.",
-               Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
-           });
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Revoke JWT Token",
+                Description = "Revokes the JWT refresh token for the specified user.",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
         }
 
         private static void VerifyRequestCookiesExist(HttpContext context)

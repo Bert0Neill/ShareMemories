@@ -217,7 +217,7 @@ namespace ShareMemories.Infrastructure.Services
 
         public async Task<LoginRegisterRefreshResponseDto> RevokeRefreshTokenAsync(string jwtToken)
         {
-            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked Refresh Token" }; // default message
+            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked refresh token" }; // default message
 
             var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
@@ -231,22 +231,29 @@ namespace ShareMemories.Infrastructure.Services
             {
                 var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name); // retrieve user principal
 
+                if (identityUser is null)
+                {
+                    response.IsRefreshRevoked = false;
+                    response.Message = $"User '{principal.Identity.Name}' not found during refresh token revoke";
+                    return response;
+                }
+
                 // clear the refresh token
                 identityUser!.RefreshToken = null;
                 identityUser.RefreshTokenExpiry = null;
                 identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
 
-                var result = await _userManager.UpdateAsync(identityUser);
+                var result = await _userManager.UpdateAsync(identityUser); // update database
 
                 // handle a database fail
                 if (!result.Succeeded)
                 {
                     response.IsRefreshRevoked = false;
-                    response.Message = "Failed to revoke Refresh Token, during revoke process";
+                    response.Message = "Failed to revoke refresh token, during revoke process";
                 }
-                else
+                else // success
                 {
-                    // remove cookies form response to client
+                    // sign out & remove cookies from response to client
                     await _signInManager.SignOutAsync();
                     _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtToken");
                     _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtRefreshToken");
