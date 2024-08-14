@@ -26,6 +26,12 @@ namespace ShareMemories.API.Extensions.AppBuilder
             }
 
             app.UseHttpsRedirection();
+
+            app.UseCors("AllowSpecificOrigins"); // apply the CORS policy
+
+            //// Apply security middleware
+            //app.UseAuthentication(); // Authenticate the token
+            //app.UseAuthorization();  // Authorize based on roles/policies
         }
 
         public static void ConfigureEndpoints(this WebApplication app)

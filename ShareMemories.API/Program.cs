@@ -10,22 +10,45 @@ var logger = NLog.LogManager.Setup().LoadConfigurationFromFile("nlog.config").Ge
 
 try
 {
+    builder.Logging.AddConsole(); // Add console logging
+
+
+    //builder.Services.AddCORsServices(builder.Configuration, logger);
+
+    // configure CORS
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowSpecificOrigins",
+            policyBuilder =>
+            {
+                // apply the allowed origins from the configuration
+                policyBuilder.WithOrigins("https://localhost:7273")
+                             .AllowAnyMethod() // Allow all HTTP methods
+                             .AllowAnyHeader() // Allow all headers
+                                               //.AllowCredentials(); // Allow credentials (cookies)
+                             ;
+            });
+    });
+
+    builder.Services.AddCors();
+
     // use extension methods to configure JWT, DI, Security Policy, Response caching, DbContext, Error middleware, DTO validation, CORs & Swagger
     builder.Services.AddCustomServices(builder.Configuration, logger);
     builder.Services.AddCustomServicesSwagger(builder.Configuration, logger);
-    //builder.Services.AddCORsServices(builder.Configuration, logger);
-    //var validCORs = builder.Configuration.GetSection("CORsWhitelistedDomains").Get<string[]>();
+    
+    
 
     var app = builder.Build();
 
-    //// Configure the HTTP request pipeline.
-    //app.UseCors("AllowSpecificOrigins"); // Apply the CORS policy
+    //app.UseCors("AllowSpecificOrigins"); // apply the CORS policy
+    //app.UseCors("AllowSpecificOrigins"); // apply the CORS policy
+    //app.UseCors(builder => builder.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://MyValidDomain.com"));
 
     // use extension methods to configure middleware and custom endpoints
     app.ConfigureMiddleware(app.Environment);
     app.ConfigureEndpoints();
 
-
+    
 
     /****************************************************************************************************************
      *                                      Testing API's                                                           *

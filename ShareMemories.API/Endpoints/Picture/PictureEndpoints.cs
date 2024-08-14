@@ -1,6 +1,8 @@
 ﻿using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.OpenApi.Models;
@@ -16,9 +18,9 @@ namespace ShareMemories.API.Endpoints.Picture
             // apply settings to a group of API's (default to Bearer Authentication & associate a Policy with all API calls)
             var group = routes.MapGroup("pictures")
               .WithOpenApi()
-              .RequireAuthorization("UserPolicy")
-              .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
-            
+              .RequireAuthorization("UserPolicy") // apply a security policy to API's and a default Bearer Scheme
+              .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+                ;
 
             // API below is returning a Typed Result of 'Book' or 'NotFound', depending on if the book is retrieved. Authorisation needed.
             group.MapGet("/PictureAsync/{id}", [OutputCache(PolicyName = "Expire30")] async Task<Results<Ok<ShareMemories.Domain.Entities.Picture>, NotFound>> (IPictureService pictureService, int id) =>
@@ -30,7 +32,7 @@ namespace ShareMemories.API.Endpoints.Picture
                 return await pictureService.GetPictureByIdAsync(id) is { } picture // pattern matching expression. Checking if bookService.GetBook(id) matches the pattern { } and assigns it to a variable named book.
                         ? TypedResults.Ok(picture) // return Book if non-null value
                         : TypedResults.NotFound(); // if Null, return NotFound
-            })              
+            })
               .WithName("GetPictureById")
               .WithOpenApi(x => new OpenApiOperation(x)
               {
@@ -38,8 +40,10 @@ namespace ShareMemories.API.Endpoints.Picture
                   Description = "Returns information about a selected picture from the user's library.",
                   Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
               })
-              .CacheOutput(x => x.Tag("PictureById")); // invalidate data when new record added, by using tag in Post API    
-
+              .CacheOutput(x => x.Tag("PictureById"));
+              //.RequireCors("AllowSpecificOrigins");
+              // invalidate data when new record added, by using tag in Post API    
+            
 
             group.MapPost("/InsertPictureAsync", async (HttpContext context, ShareMemories.Domain.Entities.Picture picture, IPictureService pictureService) =>
             {
