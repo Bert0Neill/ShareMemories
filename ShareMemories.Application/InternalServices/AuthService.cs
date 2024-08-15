@@ -223,7 +223,6 @@ namespace ShareMemories.Infrastructure.Services
         {
             Guard.Against.Null(jwtToken, null, "Token not valid");
             
-
             var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked refresh token" }; // default message
 
             var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
@@ -324,7 +323,12 @@ namespace ShareMemories.Infrastructure.Services
                 var result = await _userManager.ResetPasswordAsync(identityUser, token, password);
 
                 if (result.Succeeded) response.IsLoggedIn = true;
-                else response.Message = "Error resetting password.";
+                else
+                {
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                    response.Message = errors.ToString();
+                }
             }
 
             return response;
@@ -375,6 +379,7 @@ namespace ShareMemories.Infrastructure.Services
                     Thanking you
                     O'Neill Says!";
             }
+
             await _emailSender.SendEmailAsync(identityUser.Email, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
         }
         private async Task<IList<string>> VerifyUserIdentityAsync(LoginUserDto user, ExtendIdentityUser? identityUser)

@@ -174,7 +174,7 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              *          Verify password reset (this will be called by email link to with new password)             *
              *******************************************************************************************************/
-            group.MapPost("/VerifyPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string token, string password) =>
+            group.MapPost("/VerifyPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, string password, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Email is missing");
                 Guard.Against.Empty(password, "Password is missing");
@@ -186,11 +186,10 @@ namespace ShareMemories.API.Endpoints.Auth
                 if (!response.IsLoggedIn) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
             })
-            .WithName("RequestPasswordReset")
-            //.WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithName("VerifyPasswordReset")
             .WithOpenApi(x => new OpenApiOperation(x)
             {
-                Summary = "Password reset",
+                Summary = "Called by clicking on a link in an email",
                 Description = "Request a password reset email.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
@@ -198,7 +197,7 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              *          Request password reset (this will send an email with a link to reset password)             *
              *******************************************************************************************************/
-            group.MapPost("/RequestPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName) =>
+            group.MapPost("/RequestPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
@@ -209,10 +208,11 @@ namespace ShareMemories.API.Endpoints.Auth
                 else return TypedResults.Ok(response.Message);
             })
             .WithName("RequestPasswordReset")
+            .RequireAuthorization()
             .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)
             {
-                Summary = "Password reset",
+                Summary = "Request an email with a link to reset the password",
                 Description = "Request a password reset email.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
