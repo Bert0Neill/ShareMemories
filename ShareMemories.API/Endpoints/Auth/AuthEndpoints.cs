@@ -49,12 +49,6 @@ namespace ShareMemories.API.Endpoints.Auth
 
                 if (loginResult.IsLoggedIn)
                 {
-                    //CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;
-                    //GenerateCookieOptions(loginResult, out cookieOptionsJWT, out cookieOptionsRefreshJWT);
-                    //// Set the cookie in the response
-                    //context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, cookieOptionsJWT);
-                    //context.Response.Cookies.Append("jwtRefreshToken", loginResult.JwtRefreshToken, cookieOptionsRefreshJWT);
-
 #if DEBUG
                     return Results.Ok(loginResult); // testing with JWT Token in Swagger - development ONLY!!!
 #else
@@ -85,11 +79,6 @@ namespace ShareMemories.API.Endpoints.Auth
 
                 if (loginResult.IsLoggedIn)
                 {
-                    //// reset the cookies in the response
-                    //CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;
-                    //GenerateCookieOptions(loginResult, out cookieOptionsJWT, out cookieOptionsRefreshJWT);                    
-                    //context.Response.Cookies.Append("jwtToken", loginResult.JwtToken, cookieOptionsJWT);
-                    //context.Response.Cookies.Append("jwtRefreshToken", loginResult.JwtRefreshToken, cookieOptionsRefreshJWT);
 
 #if DEBUG
                     return Results.Ok(loginResult); // testing with JWT Token in Swagger - development ONLY!!!
@@ -177,34 +166,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Confirms the user's email address with the provided token, after they have registered.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
-
-
-
         }
-
-        //private static void GenerateCookieOptions(LoginRegisterRefreshResponseDto loginResult, out CookieOptions cookieOptionsJWT, out CookieOptions cookieOptionsRefreshJWT)
-        //{
-        //    // Set the JWT as a HttpOnly cookie
-        //    cookieOptionsJWT = new CookieOptions
-        //    {
-        //        HttpOnly = true,
-        //        IsEssential = true,
-        //        Secure = true, // Ensures the cookie is sent over HTTPS
-        //        SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-        //        Expires = loginResult.JwtTokenExpire
-        //    };
-
-        //    // Set the Refresh Token as a HttpOnly cookie
-        //    cookieOptionsRefreshJWT = new CookieOptions
-        //    {
-        //        HttpOnly = true,
-        //        IsEssential = true,
-        //        Secure = true, // Ensures the cookie is sent over HTTPS
-        //        SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks                        
-        //        Expires = loginResult.JwtRefreshTokenExpire
-
-        //    };
-        //}
 
         private static void VerifyRequestCookiesExist(HttpContext context)
         {

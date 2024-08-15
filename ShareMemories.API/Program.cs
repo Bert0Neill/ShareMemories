@@ -23,21 +23,6 @@ try
     app.ConfigureMiddleware(app.Environment);
     app.ConfigureEndpoints();
 
-    /****************************************************************************************************************
-     *                                      Testing API's                                                           *
-     ****************************************************************************************************************/
-    app.MapGet("/AdminLoggedIn", (ClaimsPrincipal user) => $"Hello {user.Identity!.Name}")
-        .RequireAuthorization("AdminPolicy")
-        .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
-
-    app.MapGet("/UserLoggedIn", () =>
-    {
-        return Results.Ok("This data is accessible by User");
-    })
-    .RequireAuthorization("UserPolicy")
-    .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
-    
-
     app.Run();
 }
 catch (Exception exception)

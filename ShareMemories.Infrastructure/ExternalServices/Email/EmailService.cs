@@ -37,7 +37,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Email
                 Text = message
             });
 
-            _logger.LogInformation($"{_configuration["Mailosaur:To"]} was emailed at {response.Received}");
+            _logger.LogInformation($"{toEmail} was emailed at {response.Received}");
         }
     }
 }

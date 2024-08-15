@@ -291,19 +291,22 @@ namespace ShareMemories.Infrastructure.Services
             string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser);
 
             // Build the confirmation link
-            string confirmationLink = $"https://localhost:7273/auths/ConfirmEmailAsync?userName={identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+            
+            //string confirmationLink = $"https://localhost:7273/auths/ConfirmEmailAsync?userName={identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+            string confirmationLink = $"{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
 
             // Build up Email Confirmation
             string subject = "Confirmation Email";
-            string message = $@"Hello {identityUser.FirstName}
+            string message = $@"
+                    Hello {identityUser.FirstName}
 
-                                Thank you for registering. Please confirm your email by clicking the link below:                                
-                                Confirm your email: <{confirmationLink}>
+                    Thank you for registering. Please confirm your email by clicking the link below:                                
+                    Confirm your email: <{confirmationLink}>
 
-                                If you did not register on the site, please ignore this email.
+                    If you did not register for this site, please ignore this email.
 
-                                Thanking you
-                                O'Neill Say!";
+                    Thanking you
+                    O'Neill Says!";
 
             await _emailSender.SendEmailAsync(identityUser.Email, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
         }
