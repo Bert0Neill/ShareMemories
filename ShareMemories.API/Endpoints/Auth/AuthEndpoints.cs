@@ -197,7 +197,7 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              *          Request password reset (this will send an email with a link to reset password)             *
              *******************************************************************************************************/
-            group.MapPost("/RequestPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            group.MapGet("/RequestPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
@@ -216,6 +216,79 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Request a password reset email.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
+
+            /*******************************************************************************************************
+             *                                  2 Factor Authentication Actions                                    *
+             *******************************************************************************************************/
+            group.MapPost("/enable-2fa", async (UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, string userId, string code) =>
+            {
+                var user = await userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return Results.NotFound("User not found.");
+                }
+
+                var is2faTokenValid = await userManager.VerifyTwoFactorTokenAsync(user, userManager.Options.Tokens.AuthenticatorTokenProvider, code);
+                if (!is2faTokenValid)
+                {
+                    return Results.BadRequest("Invalid 2FA code.");
+                }
+
+                user.TwoFactorEnabled = true;
+                var result = await userManager.UpdateAsync(user);
+
+                if (result.Succeeded)
+                {
+                    return Results.Ok("2FA is enabled for the user.");
+                }
+
+                return Results.BadRequest("Failed to enable 2FA.");
+            });
+
+            group.MapGet("/generate-2fa-code", async (UserManager<IdentityUser> userManager, string userId) =>
+            {
+                var user = await userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return Results.NotFound("User not found.");
+                }
+
+                if (!user.TwoFactorEnabled)
+                {
+                    return Results.BadRequest("2FA is not enabled for this user.");
+                }
+
+                var code = await userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider);
+                return Results.Ok(new { Code = code });
+            });
+
+            group.MapPost("/verify-2fa", async (UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, string userId, string code) =>
+            {
+                var user = await userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return Results.NotFound("User not found.");
+                }
+
+                var result = await signInManager.TwoFactorSignInAsync(TokenOptions.DefaultAuthenticatorProvider, code, isPersistent: false, rememberClient: false);
+
+                if (result.Succeeded)
+                {
+                    return Results.Ok("2FA verification successful.");
+                }
+                else if (result.IsLockedOut)
+                {
+                    return Results.StatusCode(423); // User account locked out.
+                }
+                else
+                {
+                    return Results.BadRequest("Invalid 2FA code.");
+                }
+            });
+
+
+
+
         }
 
         private static void VerifyRequestCookiesExist(HttpContext context)

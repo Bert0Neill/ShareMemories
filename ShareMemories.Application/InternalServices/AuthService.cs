@@ -59,9 +59,15 @@ namespace ShareMemories.Infrastructure.Services
             identityUser.RefreshTokenExpiry = response.JwtRefreshTokenExpire; // ensure that refresh token expires long after JWT bearer token                        
             identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
 
-            await _userManager.UpdateAsync(identityUser);
-
-            UpdateResponseTokens(response);
+            var result = await _userManager.UpdateAsync(identityUser);
+            if (!result.Succeeded)
+            {
+                response.IsLoggedIn = true; // user is still logged in
+                var errors = new StringBuilder();
+                result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                response.Message = errors.ToString();
+            }
+            else UpdateResponseTokens(response);
 
             return response;
         }
@@ -162,9 +168,15 @@ namespace ShareMemories.Infrastructure.Services
                     identityUser.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(REFRESH_TOKEN_EXPIRE_DAYS).UtcDateTime; // refresh token should be longer than JWT bearer token
                     identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
 
-                    await _userManager.UpdateAsync(identityUser);
-
-                    UpdateResponseTokens(response);
+                    var result = await _userManager.UpdateAsync(identityUser);
+                    if (!result.Succeeded)
+                    {
+                        response.IsLoggedIn = true; // user is still logged in
+                        var errors = new StringBuilder();
+                        result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                        response.Message = errors.ToString();
+                    }
+                    else UpdateResponseTokens(response);
 
                     return response;
                 }
@@ -205,7 +217,9 @@ namespace ShareMemories.Infrastructure.Services
                 if (!result.Succeeded)
                 {
                     response.IsLoggedIn = true; // user is still logged in
-                    response.Message = "Failed to delete Refresh Token, during logout process";
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                    response.Message = errors.ToString();
                 }
                 else
                 {
@@ -255,7 +269,9 @@ namespace ShareMemories.Infrastructure.Services
                 if (!result.Succeeded)
                 {
                     response.IsRefreshRevoked = false;
-                    response.Message = "Failed to revoke refresh token, during revoke process";
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                    response.Message = errors.ToString();
                 }
                 else // success
                 {
@@ -282,8 +298,13 @@ namespace ShareMemories.Infrastructure.Services
             {
                 var result = await _userManager.ConfirmEmailAsync(identityUser, token);
 
-                if (result.Succeeded) response.IsLoggedIn = true;                
-                else response.Message = "Error confirming email.";
+                if (result.Succeeded) response.IsLoggedIn = true;
+                else
+                {
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
+                    response.Message = errors.ToString();
+                }
             }
 
             return response;
