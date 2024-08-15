@@ -70,7 +70,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
 
                 // Confirm Email options
                 options.SignIn.RequireConfirmedEmail = true;
-                options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider; // this will create a shorter code for the user to copy & paste
+                options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;  // use email for email registration
+                options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;      // use email for password reset
 
                 // Lockout settings.
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
@@ -81,13 +82,19 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
                 options.User.RequireUniqueEmail = false;
 
+               
             })
             .AddEntityFrameworkStores<ShareMemoriesContext>()
             .AddApiEndpoints()
             .AddDefaultTokenProviders();
 
-            // load email service settings for email confirmation
-            services.AddSendGrid(options => options.ApiKey = configuration.GetSection("SendGrid:SendGridKey").Value);
+
+            // configure the timeout for a Confirmation email (token), before it expires. Used as part of Registration process.
+            services.Configure<DataProtectionTokenProviderOptions>(options =>
+            {
+                options.TokenLifespan = TimeSpan.FromSeconds(1); // Set the token lifespan
+                //options.TokenLifespan = TimeSpan.FromHours(1); // Set the token lifespan
+            });
 
             // Add Custom Authorization Policies
             services.AddAuthorization(options =>

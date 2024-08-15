@@ -40,6 +40,8 @@ namespace ShareMemories.Infrastructure.Services
         #region APIs
         public async Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user)
         {
+            Guard.Against.Null(user, null, "User credentials not valid");
+
             var response = new LoginRegisterRefreshResponseDto(); // "IsLoggedIn" will be false by default
             var identityUser = await _userManager.FindByNameAsync(user.UserName);
 
@@ -66,6 +68,8 @@ namespace ShareMemories.Infrastructure.Services
 
         public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user)
         {
+            Guard.Against.Null(user, null, "User credentials not valid");
+
             LoginRegisterRefreshResponseDto registerResponseDto = new();
 
             // verify that Username and\or email have not already been registered
@@ -107,7 +111,8 @@ namespace ShareMemories.Infrastructure.Services
                 }
                 else // success registering user & role
                 {
-                    await SendConfirmationEmailAsync(identityUser);
+                    string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser); // generate token to be used in URL
+                    await SendEmailTaskAsync(identityUser, verificationCode, true);
 
                     registerResponseDto.Message = $"Username: {user.UserName} registered successfully. A confirmation email has been sent to {identityUser.Email}, you will need to click the link within the email to complete the registration. Check your Spam folder if it isn't in your Inbox.";
                     registerResponseDto.IsLoggedIn = true; // doubling up the IsLoggedIn property to indicate if user was successfully registered or not
@@ -161,12 +166,6 @@ namespace ShareMemories.Infrastructure.Services
 
                     UpdateResponseTokens(response);
 
-                    //// reset the cookies in the response
-                    //CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;
-                    //GenerateCookieOptions(response.JwtTokenExpire, response.JwtRefreshTokenExpire, out cookieOptionsJWT, out cookieOptionsRefreshJWT);
-                    //_httpContextAccessor.HttpContext.Response.Cookies.Append("jwtToken", response.JwtToken, cookieOptionsJWT);
-                    //_httpContextAccessor.HttpContext.Response.Cookies.Append("jwtRefreshToken", response.JwtRefreshToken, cookieOptionsRefreshJWT);
-
                     return response;
                 }
             }
@@ -179,6 +178,8 @@ namespace ShareMemories.Infrastructure.Services
 
         public async Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken)
         {
+            Guard.Against.Null(jwtToken, null, "Token not valid");
+
             var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully logged out" }; // default message
 
             var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
@@ -220,6 +221,9 @@ namespace ShareMemories.Infrastructure.Services
 
         public async Task<LoginRegisterRefreshResponseDto> RevokeRefreshTokenAsync(string jwtToken)
         {
+            Guard.Against.Null(jwtToken, null, "Token not valid");
+            
+
             var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked refresh token" }; // default message
 
             var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
@@ -266,8 +270,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> ConfirmEmailAsync(string userName, string token)
+        public async Task<LoginRegisterRefreshResponseDto> VerifyEmailConfirmationAsync(string userName, string token)
         {
+            Guard.Against.Null(userName, null, "User credentials not valid");
+            Guard.Against.Null(token, null, "Token not valid");
+
             var response = new LoginRegisterRefreshResponseDto() { Message = "Email confirmation successful, you can now login." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
@@ -283,31 +290,91 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
+        public async Task<LoginRegisterRefreshResponseDto> RequestPasswordResetAsync(string userName)
+        {
+            Guard.Against.Null(userName, null, "User credentials not valid");            
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = $"A password reset request has been sent to user - {userName}." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser == null) response.Message = "An invalid email or the email is not register to your account";
+            else
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(identityUser);
+                await SendEmailTaskAsync(identityUser, token, false);
+                response.IsLoggedIn = true; // double up for validating password sent successfully
+            }
+
+            return response;
+        }
+
+        public async Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string userName, string token, string password)
+        {
+            Guard.Against.Null(userName, null, "User credentials not valid");
+            Guard.Against.Null(token, null, "Token not valid");
+            Guard.Against.Null(password, null, "Password not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = "Password was reset successfully." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+            if (identityUser == null) response.Message = "Invalid credentials or token";
+            else
+            {
+                var result = await _userManager.ResetPasswordAsync(identityUser, token, password);
+
+                if (result.Succeeded) response.IsLoggedIn = true;
+                else response.Message = "Error resetting password.";
+            }
+
+            return response;
+        }
+
         #endregion
 
         #region Helper Methods
-        private async Task SendConfirmationEmailAsync(ExtendIdentityUser identityUser)
+        private async Task SendEmailTaskAsync(ExtendIdentityUser identityUser, string verificationCode, bool isConfirmEmail = true)
         {
-            string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser);
+            string subject;
+            string message;
+            string actionLink;
 
-            // Build the confirmation link
-            
-            //string confirmationLink = $"https://localhost:7273/auths/ConfirmEmailAsync?userName={identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
-            string confirmationLink = $"{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+            if (isConfirmEmail)
+            {
+                actionLink = $"{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
 
-            // Build up Email Confirmation
-            string subject = "Confirmation Email";
-            string message = $@"
+                // Build up Email Confirmation
+                subject = "Confirmation Email";
+                message = $@"
                     Hello {identityUser.FirstName}
 
-                    Thank you for registering. Please confirm your email by clicking the link below:                                
-                    Confirm your email: <{confirmationLink}>
+                    Thank you for registering. Please confirm your email by clicking the link below:
+                    
+                    Confirm email link: {actionLink}
 
                     If you did not register for this site, please ignore this email.
 
                     Thanking you
                     O'Neill Says!";
+            }
+            else
+            {
+                actionLink = $"{_config["EnvironmentResetPasswordApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
 
+                // Build up Email Confirmation
+                subject = "Password Reset Request";
+                message = $@"
+                    Hello {identityUser.FirstName}
+
+                    We received a request to reset your password. Click the link below to reset it:
+                    
+                    Reset password link: {actionLink}
+
+                    If you did not request a password reset, please ignore this email.
+
+                    Thanking you
+                    O'Neill Says!";
+            }
             await _emailSender.SendEmailAsync(identityUser.Email, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
         }
         private async Task<IList<string>> VerifyUserIdentityAsync(LoginUserDto user, ExtendIdentityUser? identityUser)

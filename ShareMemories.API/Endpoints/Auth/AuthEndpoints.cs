@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
 using ShareMemories.Domain.DTOs;
@@ -142,7 +143,7 @@ namespace ShareMemories.API.Endpoints.Auth
             .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)
             {
-                Summary = "Revoke JWT Token",
+                Summary = "Revoke JWT & Refresh Token",
                 Description = "Revokes the JWT refresh token for the specified user.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
@@ -151,11 +152,14 @@ namespace ShareMemories.API.Endpoints.Auth
              *              Allow user to confirm their email address, stop fraud and bogus accounts               *
              *******************************************************************************************************/
             group.MapGet("/ConfirmEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string token) =>
-            {                                
-                var response = await authService.ConfirmEmailAsync(userName, token);
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+                Guard.Against.Empty(token, "Confirm token is missing");
+
+                var response = await authService.VerifyEmailConfirmationAsync(userName, token);
 
                 // was the email confirmation successful
-                if (!response.IsRefreshRevoked) return TypedResults.NotFound(response.Message);
+                if (!response.IsLoggedIn) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
                 
             })
@@ -164,6 +168,52 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 Summary = "Confirm Email",
                 Description = "Confirms the user's email address with the provided token, after they have registered.",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+
+            /*******************************************************************************************************
+             *          Verify password reset (this will be called by email link to with new password)             *
+             *******************************************************************************************************/
+            group.MapPost("/VerifyPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string token, string password) =>
+            {
+                Guard.Against.Empty(userName, "Email is missing");
+                Guard.Against.Empty(password, "Password is missing");
+                Guard.Against.Empty(token, "Password reset token is missing");
+
+                var response = await authService.VerifyPasswordResetAsync(userName, token, password);
+
+                // was the email confirmation successful
+                if (!response.IsLoggedIn) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+            })
+            .WithName("RequestPasswordReset")
+            //.WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Password reset",
+                Description = "Request a password reset email.",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+
+            /*******************************************************************************************************
+             *          Request password reset (this will send an email with a link to reset password)             *
+             *******************************************************************************************************/
+            group.MapPost("/RequestPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+
+                var response = await authService.RequestPasswordResetAsync(userName);
+
+                // was the email confirmation successful
+                if (!response.IsLoggedIn) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+            })
+            .WithName("RequestPasswordReset")
+            .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Password reset",
+                Description = "Request a password reset email.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
         }

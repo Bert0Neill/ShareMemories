@@ -19,9 +19,9 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
     {
         public static void AddServicesInitialSetup(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
         {
-            // Add global error handler middleware
-            services.AddProblemDetails();
-            services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
+            //// Add global error handler middleware
+            //services.AddProblemDetails();
+            //services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
 
             // Add DTO model validation (from client)
             services.AddValidatorsFromAssemblyContaining(typeof(PictureValidator));
@@ -32,7 +32,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 db.UseSqlServer(configuration.GetConnectionString("DefaultConnection")),
                 ServiceLifetime.Singleton);
 
-            // Register email provider (MailosaurClient) - NB: you can replace with your company SMTP or another email provider
+            // Register DI for email provider (MailosaurClient) - NB: you can replace with your company SMTP or another email provider
             services.AddSingleton<MailosaurClient>(sp =>
             {
                 return new MailosaurClient(configuration["Mailosaur:ApiKey"]); // Read from configuration
