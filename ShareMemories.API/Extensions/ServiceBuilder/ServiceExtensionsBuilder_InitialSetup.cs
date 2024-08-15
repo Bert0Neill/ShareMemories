@@ -1,4 +1,6 @@
 ﻿using FluentValidation;
+using Mailosaur;
+using Mailosaur.Operations;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using ShareMemories.API.Validators;
@@ -29,6 +31,12 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
             services.AddDbContext<ShareMemoriesContext>(db =>
                 db.UseSqlServer(configuration.GetConnectionString("DefaultConnection")),
                 ServiceLifetime.Singleton);
+
+            // Register email provider (MailosaurClient) - NB: you can replace with your company SMTP or another email provider
+            services.AddSingleton<MailosaurClient>(sp =>
+            {
+                return new MailosaurClient(configuration["Mailosaur:ApiKey"]); // Read from configuration
+            });
 
             // Dependency Injection
             services.AddScoped<IPictureService, PictureService>();          // Application

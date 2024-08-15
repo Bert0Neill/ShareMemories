@@ -68,8 +68,9 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.Password.RequireUppercase = true;
                 options.User.RequireUniqueEmail = true;
 
-                // Confirm Email
+                // Confirm Email options
                 options.SignIn.RequireConfirmedEmail = true;
+                options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider; // this will create a shorter code for the user to copy & paste
 
                 // Lockout settings.
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);

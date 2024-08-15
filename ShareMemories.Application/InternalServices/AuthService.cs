@@ -1,13 +1,14 @@
-﻿using Mailosaur;
-using Mailosaur.Models;
+﻿using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Infrastructure.Interfaces;
+using System;
 using System.Text;
 
 namespace ShareMemories.Infrastructure.Services
@@ -21,17 +22,19 @@ namespace ShareMemories.Infrastructure.Services
         private readonly IConfiguration _config;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IEmailSender _emailSender;
 
         private bool _isRefreshing = false;
         private const int REFRESH_TOKEN_EXPIRE_DAYS = 10;
         private const int JWT_TOKEN_EXPIRE_MINS = 30;        
-        public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService, SignInManager<ExtendIdentityUser> signInManager, IHttpContextAccessor httpContextAccessor)
+        public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService, SignInManager<ExtendIdentityUser> signInManager, IHttpContextAccessor httpContextAccessor, IEmailSender emailSender)
         {
             _userManager = userManager;
             _config = config;
             _jwtTokenService = jwtTokenService;
             _signInManager = signInManager;
             _httpContextAccessor = httpContextAccessor;
+            _emailSender = emailSender;
         }
 
         #region APIs
@@ -40,14 +43,7 @@ namespace ShareMemories.Infrastructure.Services
             var response = new LoginRegisterRefreshResponseDto(); // "IsLoggedIn" will be false by default
             var identityUser = await _userManager.FindByNameAsync(user.UserName);
 
-            // determine if user exists & passwords match
-            if (identityUser is null || !(await _userManager.CheckPasswordAsync(identityUser, user.Password)))
-            {
-                response.Message = "User credentials not valid";
-                return response;
-            }
-
-            var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
+            IList<string> roles = await VerifyUserIdentityAsync(user, identityUser); // checks to verify a valid user - a BadRequest is thrown otherwise
 
             response.IsLoggedIn = true;
             response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
@@ -65,11 +61,8 @@ namespace ShareMemories.Infrastructure.Services
 
             UpdateResponseTokens(response);
 
-
-            SendEmail();
-
             return response;
-        }     
+        }
 
         public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user)
         {
@@ -82,7 +75,7 @@ namespace ShareMemories.Infrastructure.Services
                 return registerResponseDto;
             }
 
-            // add these details to the AspNetUser table
+            // add these details to a new AspNetUser table instance
             var identityUser = new ExtendIdentityUser
             {
                 UserName = user.UserName,
@@ -90,19 +83,16 @@ namespace ShareMemories.Infrastructure.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 DateOfBirth = user.DateOfBirth,
-                LastUpdated = DateTimeOffset.UtcNow.UtcDateTime
+                LastUpdated = DateTimeOffset.UtcNow.UtcDateTime               
             };
 
             var result = await _userManager.CreateAsync(identityUser, user.Password);
-
-            registerResponseDto.IsLoggedIn = true; // allow checks below to modify logged in status
 
             if (result.Errors.Any())
             {
                 var errors = new StringBuilder();
                 result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
                 registerResponseDto.Message = errors.ToString();
-                registerResponseDto.IsLoggedIn = false; // user not successfully registered
             }
             else // success - assign default role
             {
@@ -114,14 +104,18 @@ namespace ShareMemories.Infrastructure.Services
                     var roleErrors = new StringBuilder();
                     roleAssignResult.Errors.ToList().ForEach(err => roleErrors.AppendLine($"• {err.Description}"));
                     registerResponseDto.Message = $"Username: {user.UserName} registered, but there was an issue assigning roles: {roleErrors}";
-                    registerResponseDto.IsLoggedIn = false; // user not successfully registered
-                }                
+                }
                 else // success registering user & role
-                    registerResponseDto.Message = $"Username: {user.UserName} registered successfully, you can now log in.";
+                {
+                    await SendConfirmationEmailAsync(identityUser);
+
+                    registerResponseDto.Message = $"Username: {user.UserName} registered successfully. A confirmation email has been sent to {identityUser.Email}, you will need to click the link within the email to complete the registration. Check your Spam folder if it isn't in your Inbox.";
+                    registerResponseDto.IsLoggedIn = true; // doubling up the IsLoggedIn property to indicate if user was successfully registered or not
+                }
             }
 
             return registerResponseDto;
-        }
+        }      
 
         public async Task<LoginRegisterRefreshResponseDto> RefreshTokenAsync(string jwtToken, string refreshToken)
         {
@@ -272,10 +266,63 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
+        public async Task<LoginRegisterRefreshResponseDto> ConfirmEmailAsync(string userName, string token)
+        {
+            var response = new LoginRegisterRefreshResponseDto() { Message = "Email confirmation successful, you can now login." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+            if (identityUser == null) response.Message = "Invalid credentials or token";            
+            else
+            {
+                var result = await _userManager.ConfirmEmailAsync(identityUser, token);
+
+                if (result.Succeeded) response.IsLoggedIn = true;                
+                else response.Message = "Error confirming email.";
+            }
+
+            return response;
+        }
+
         #endregion
 
         #region Helper Methods
+        private async Task SendConfirmationEmailAsync(ExtendIdentityUser identityUser)
+        {
+            string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser);
 
+            // Build the confirmation link
+            string confirmationLink = $"https://localhost:7273/auths/ConfirmEmailAsync?userName={identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+
+            // Build up Email Confirmation
+            string subject = "Confirmation Email";
+            string message = $@"Hello {identityUser.FirstName}
+
+                                Thank you for registering. Please confirm your email by clicking the link below:                                
+                                Confirm your email: <{confirmationLink}>
+
+                                If you did not register on the site, please ignore this email.
+
+                                Thanking you
+                                O'Neill Say!";
+
+            await _emailSender.SendEmailAsync(identityUser.Email, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
+        }
+        private async Task<IList<string>> VerifyUserIdentityAsync(LoginUserDto user, ExtendIdentityUser? identityUser)
+        {
+            // verify user exists - a BadRequest will be thrown in Global Error Handler (middleware)
+            Guard.Against.Null(identityUser, null, "User credentials not valid");
+
+            // verify user confirmed email address - a BadRequest will be thrown in Global Error Handler (middleware)
+            Guard.Against.Null(await _userManager.IsEmailConfirmedAsync(identityUser) ? (bool?)true : null, null, "User has not yet confirmed their email address. Check your Spam folder.");
+
+            // verify user's password matches that in the Identity table - a BadRequest will be thrown in Global Error Handler (middleware)
+            Guard.Against.Null(await _userManager.CheckPasswordAsync(identityUser, user.Password) ? (bool?)true : null, null, "Invalid credentials entered, please try again.");
+
+            // retrieve roles & verify user has at least 1 role - a BadRequest will be thrown in Global Error Handler (middleware)
+            var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
+            Guard.Against.Null(roles.Any() ? (bool?)true : null, null, "No roles associated with user - contact Administration.");
+            return roles;
+        }
         private void UpdateResponseTokens(LoginRegisterRefreshResponseDto response)
         {
             // reset the cookies in the response
@@ -284,7 +331,6 @@ namespace ShareMemories.Infrastructure.Services
             _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtToken", response.JwtToken, cookieOptionsJWT);
             _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtRefreshToken", response.JwtRefreshToken, cookieOptionsRefreshJWT);
         }
-
         private static void GenerateCookieOptions(DateTimeOffset JwtTokenExpire, DateTimeOffset JwtRefreshTokenExpire, out CookieOptions cookieOptionsJWT, out CookieOptions cookieOptionsRefreshJWT)
         {
             // Set the JWT as a HttpOnly cookie
@@ -322,29 +368,7 @@ namespace ShareMemories.Infrastructure.Services
 
             return usernameExists || emailExists;
         }
-
-        private void SendEmail()
-        {
-            // Available in the API tab of a server
-            //var apiKey = "InfGNNNf38rOLeZJ9DoY7QcqmfCq8ux9"; //1IlJ8eIY1waV0mZd7xPBqX5aIZxOGFrt
-            var apiKey = "1IlJ8eIY1waV0mZd7xPBqX5aIZxOGFrt"; // Server API key (create this)
-            var serverId = "a3tuvq9f";
-            //var serverDomain = "a3tuvq9f.mailosaur.net";
-
-            var mailosaur = new MailosaurClient(apiKey);
-
-            mailosaur.Messages.Create(serverId, new MessageCreateOptions()
-            {
-                From = "use-save@a3tuvq9f.mailosaur.net",
-                To = "Bertoneill@yahoo.com",  
-                Send = true,
-                Subject = "Request",
-                Text = "Please can you give us a call back?"
-            });
-
-            // If we have an email, print the subject
-            Console.WriteLine("Subject: Email Testing...." );
-        }
+       
         #endregion
     }
 }

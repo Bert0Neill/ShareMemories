@@ -1,9 +1,14 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Mailosaur.Models;
+using Mailosaur;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SendGrid;
 using SendGrid.Helpers.Mail;
+using Azure;
+using System.Text;
+using Mailosaur.Operations;
 
 namespace ShareMemories.Infrastructure.ExternalServices.Email
 {
@@ -12,70 +17,27 @@ namespace ShareMemories.Infrastructure.ExternalServices.Email
 
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
-        private readonly ISendGridClient _sendGridClient;
+        private readonly MailosaurClient _mailosaurClient;
 
-
-        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, ISendGridClient sendGridClient)
+        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, MailosaurClient mailosaurClient)
         {
             _configuration = configuration;
             _logger = logger;
-            _sendGridClient = sendGridClient;
+            _mailosaurClient = mailosaurClient; 
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string message)
         {
-            var msg = new SendGridMessage()
+            var response = _mailosaurClient.Messages.Create(_configuration["Mailosaur:ServerId"], new MessageCreateOptions()
             {
-                From = new EmailAddress(_configuration["From"], _configuration["Name"]),
+                From = _configuration["Mailosaur:From"], // a valid Mailosaur email account
+                To = toEmail, 
+                Send = true,
                 Subject = subject,
-                PlainTextContent = message,
-                HtmlContent = message
-            };
-            msg.AddTo(new EmailAddress(toEmail));
+                Text = message
+            });
 
-            var response = await _sendGridClient.SendEmailAsync(msg);
-            _logger.LogInformation(response.IsSuccessStatusCode
-                                   ? $"Email to {toEmail} queued successfully!"
-                                   : $"Failure Email to {toEmail}");
+            _logger.LogInformation($"{_configuration["Mailosaur:To"]} was emailed at {response.Received}");
         }
-        //private readonly ILogger _logger;
-        //private readonly IConfiguration _configuration;
-
-        //public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
-        //{
-        //    _configuration = configuration;
-        //    _logger = logger;
-        //}
-
-        //public async Task SendEmailAsync(string toEmail, string subject, string message)
-        //{
-        //    var sendGridKey = _configuration["SendGridKey"];
-        //    ArgumentNullException.ThrowIfNullOrEmpty(sendGridKey, nameof(sendGridKey));
-        //    await Execute(sendGridKey, subject, message, toEmail);
-        //}
-
-        //public async Task Execute(string apiKey, string subject, string message, string toEmail)
-        //{
-        //    var client = new SendGridClient(apiKey);
-
-        //    var msg = new SendGridMessage()
-        //    {
-        //        From = new EmailAddress(_configuration["From"], _configuration["Name"]),
-        //        Subject = subject,
-        //        PlainTextContent = message,
-        //        HtmlContent = message
-        //    };
-
-        //    msg.AddTo(new EmailAddress(toEmail));
-
-        //    // Disable click tracking.
-        //    // See https://sendgrid.com/docs/User_Guide/Settings/tracking.html
-        //    msg.SetClickTracking(false, false);
-
-        //    var response = await client.SendEmailAsync(msg);
-        //    _logger.LogInformation(response.IsSuccessStatusCode
-        //                           ? $"Email to {toEmail} queued successfully!"
-        //                           : $"Failure Email to {toEmail}");
-        //}
     }
 }

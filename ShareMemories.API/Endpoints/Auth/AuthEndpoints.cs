@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Infrastructure.Interfaces;
+using ShareMemories.Infrastructure.Services;
 
 namespace ShareMemories.API.Endpoints.Auth
 {
@@ -23,7 +25,7 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 var result = await authService.RegisterUserAsync(user);
 
-                if (result.IsLoggedIn) return TypedResults.Ok("Successfully registered, you can now login.");
+                if (result.IsLoggedIn) return TypedResults.Ok(result.Message);
                 else return TypedResults.BadRequest(result.Message);
 
             }).WithName("RegisterAsync")
@@ -60,7 +62,7 @@ namespace ShareMemories.API.Endpoints.Auth
 #endif
                 }
 
-                return Results.BadRequest("User credentials could not be verified.");
+                return Results.BadRequest(loginResult.Message);
             })
             .WithName("LoginAsync")
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -129,7 +131,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 Summary = "Logout user",
                 Description = "Logout user and delete their cached JWT token.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
-            });
+            });            
 
             /*******************************************************************************************************
              *          Allow user to revoke the Refresh Token if they think it has been compromised               *
@@ -155,6 +157,29 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Revokes the JWT refresh token for the specified user.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
+
+            /*******************************************************************************************************
+             *              Allow user to confirm their email address, stop fraud and bogus accounts               *
+             *******************************************************************************************************/
+            group.MapGet("/ConfirmEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string token) =>
+            {                                
+                var response = await authService.ConfirmEmailAsync(userName, token);
+
+                // was the email confirmation successful
+                if (!response.IsRefreshRevoked) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+                
+            })
+            .WithName("ConfirmEmail")
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Confirm Email",
+                Description = "Confirms the user's email address with the provided token, after they have registered.",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+
+
+
         }
 
         //private static void GenerateCookieOptions(LoginRegisterRefreshResponseDto loginResult, out CookieOptions cookieOptionsJWT, out CookieOptions cookieOptionsRefreshJWT)

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using ShareMemories.API.Endpoints.Auth;
 using ShareMemories.API.Endpoints.Picture;
 using ShareMemories.API.Endpoints.Video;
+using ShareMemories.API.Middleware;
 
 namespace ShareMemories.API.Extensions.AppBuilder
 {
@@ -11,6 +12,9 @@ namespace ShareMemories.API.Extensions.AppBuilder
     {
         public static void ConfigureMiddleware(this IApplicationBuilder app, IHostEnvironment env)
         {
+            // Add the middleware
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
+
             // Apply security middleware
             app.UseAuthentication(); // Authenticate the token
             app.UseAuthorization();  // Authorize based on roles/policies
