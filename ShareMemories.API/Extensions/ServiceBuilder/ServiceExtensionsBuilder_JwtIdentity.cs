@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using SendGrid.Extensions.DependencyInjection;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Infrastructure.Database;
 using System.Text;
@@ -28,7 +29,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = configuration.GetSection("Jwt:Issuer").Value,
                     ValidAudience = configuration.GetSection("Jwt:Audience").Value,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Jwt:Key").Value)),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Jwt:Key").Value!)),
                 };
 
                 // Capture JWT Bearer in the pipeline and assign it to MessageReceivedContext
@@ -66,10 +67,26 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.Password.RequireLowercase = true;
                 options.Password.RequireUppercase = true;
                 options.User.RequireUniqueEmail = true;
+
+                // Confirm Email
+                options.SignIn.RequireConfirmedEmail = true;
+
+                // Lockout settings.
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.AllowedForNewUsers = true;
+
+                // User settings.
+                options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+                options.User.RequireUniqueEmail = false;
+
             })
             .AddEntityFrameworkStores<ShareMemoriesContext>()
             .AddApiEndpoints()
             .AddDefaultTokenProviders();
+
+            // load email service settings for email confirmation
+            services.AddSendGrid(options => options.ApiKey = configuration.GetSection("SendGrid:SendGridKey").Value);
 
             // Add Custom Authorization Policies
             services.AddAuthorization(options =>

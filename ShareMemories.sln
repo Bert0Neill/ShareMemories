@@ -46,7 +46,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Postman", "Postman", "{0B19
 		..\..\Users\oneillb\Downloads\JWT Authentication.postman_collection.json = ..\..\Users\oneillb\Downloads\JWT Authentication.postman_collection.json
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Twillo", "Twillo", "{4570CBF4-4C79-4A4B-8F2A-8DDDEA7C685C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mailosaur", "mailosaur", "{4570CBF4-4C79-4A4B-8F2A-8DDDEA7C685C}"
 	ProjectSection(SolutionItems) = preProject
 		Account Details.txt = Account Details.txt
 	EndProjectSection

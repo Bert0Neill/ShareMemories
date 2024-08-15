@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Mailosaur;
+using Mailosaur.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -62,6 +64,9 @@ namespace ShareMemories.Infrastructure.Services
             await _userManager.UpdateAsync(identityUser);
 
             UpdateResponseTokens(response);
+
+
+            SendEmail();
 
             return response;
         }     
@@ -316,6 +321,29 @@ namespace ShareMemories.Infrastructure.Services
             var emailExists = emailTask != null;
 
             return usernameExists || emailExists;
+        }
+
+        private void SendEmail()
+        {
+            // Available in the API tab of a server
+            //var apiKey = "InfGNNNf38rOLeZJ9DoY7QcqmfCq8ux9"; //1IlJ8eIY1waV0mZd7xPBqX5aIZxOGFrt
+            var apiKey = "1IlJ8eIY1waV0mZd7xPBqX5aIZxOGFrt"; // Server API key (create this)
+            var serverId = "a3tuvq9f";
+            //var serverDomain = "a3tuvq9f.mailosaur.net";
+
+            var mailosaur = new MailosaurClient(apiKey);
+
+            mailosaur.Messages.Create(serverId, new MessageCreateOptions()
+            {
+                From = "use-save@a3tuvq9f.mailosaur.net",
+                To = "Bertoneill@yahoo.com",  
+                Send = true,
+                Subject = "Request",
+                Text = "Please can you give us a call back?"
+            });
+
+            // If we have an email, print the subject
+            Console.WriteLine("Subject: Email Testing...." );
         }
         #endregion
     }

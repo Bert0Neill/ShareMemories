@@ -1,4 +1,15 @@
-https://app.sendgrid.com/
-bertoneill@yahoo.com
-P@ssw0rdP@ssw0rd
-YD5UFD86ZM9B98D9JY5JCC7C
+
+https://mailosaur.com/app/servers/a3tuvq9f/keys
+Bertoneill@Yahoo.com
+P@ssw0rd
+Bert-Email-Testing API Key - 1IlJ8eIY1waV0mZd7xPBqX5aIZxOGFrt
+
+.Net Guide
+https://mailosaur.com/docs/languages/dotnet
+
+SMTP - smtp.mailosaur.net
+Server Name - Tests
+
+API Key - InfGNNNf38rOLeZJ9DoY7QcqmfCq8ux9 or 1IlJ8eIY1waV0mZd7xPBqX5aIZxOGFrt
+Server ID - a3tuvq9f
+Server Domain - a3tuvq9f.mailosaur.net

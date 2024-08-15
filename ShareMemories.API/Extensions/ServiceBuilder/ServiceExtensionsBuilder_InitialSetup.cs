@@ -1,10 +1,12 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
 using ShareMemories.Infrastructure.Database;
 using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
+using ShareMemories.Infrastructure.ExternalServices.Email;
 using ShareMemories.Infrastructure.ExternalServices.Security;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
@@ -33,6 +35,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
             services.AddScoped<IAuthService, AuthService>();                // Application
             services.AddScoped<IPictureRepository, PictureRepository>();    // Infrastructure
             services.AddScoped<IJwtTokenService, JwtTokenService>();        // Infrastructure
+            services.AddTransient<IEmailSender, EmailService>();            // Infrastructure
 
             // Generate response output caching policies
             services.AddOutputCache(options =>
