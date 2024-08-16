@@ -232,86 +232,39 @@ namespace ShareMemories.API.Endpoints.Auth
                 else return TypedResults.Ok(response.Message);
             })
             .WithName("ResendConfirmationEmail")
-            //.RequireAuthorization()
-            //.WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "Request new email confirmation",
                 Description = "Request a new email confirmation, to complete registration",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
-            
 
-            ///*******************************************************************************************************
-            // *                                  2 Factor Authentication Actions                                    *
-            // *******************************************************************************************************/
-            //group.MapPost("/enable-2fa", async (UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, string userId, string code) =>
-            //{
-            //    var user = await userManager.FindByIdAsync(userId);
-            //    if (user == null)
-            //    {
-            //        return Results.NotFound("User not found.");
-            //    }
 
-            //    var is2faTokenValid = await userManager.VerifyTwoFactorTokenAsync(user, userManager.Options.Tokens.AuthenticatorTokenProvider, code);
-            //    if (!is2faTokenValid)
-            //    {
-            //        return Results.BadRequest("Invalid 2FA code.");
-            //    }
+            /*******************************************************************************************************
+             *                                         Verify user's 2FA                                           *
+             *******************************************************************************************************/
+            group.MapGet("/Verify2faAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string code, IAuthService authService) =>            
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+                Guard.Against.Empty(code, "Code is missing");
 
-            //    user.TwoFactorEnabled = true;
-            //    var result = await userManager.UpdateAsync(user);
+                var response = await authService.Verify2faAsync(userName, code);
 
-            //    if (result.Succeeded)
-            //    {
-            //        return Results.Ok("2FA is enabled for the user.");
-            //    }
+                // was the email confirmation sent successfully
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);                
+            })
+             .WithName("Verify2fa")
+            //.RequireAuthorization()
+            //.WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Verify user login with 2FA",
+                Description = "Allow user to authenticate themselves using a code that was emailed to them, as part of the login process (if enabled)",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
 
-            //    return Results.BadRequest("Failed to enable 2FA.");
-            //});
-
-            //group.MapGet("/generate-2fa-code", async (UserManager<IdentityUser> userManager, string userId) =>
-            //{
-            //    var user = await userManager.FindByIdAsync(userId);
-            //    if (user == null)
-            //    {
-            //        return Results.NotFound("User not found.");
-            //    }
-
-            //    if (!user.TwoFactorEnabled)
-            //    {
-            //        return Results.BadRequest("2FA is not enabled for this user.");
-            //    }
-
-            //    var code = await userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider);
-            //    return Results.Ok(new { Code = code });
-            //});
-
-            //group.MapPost("/verify-2fa", async (UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, string userId, string code) =>
-            //{
-            //    var user = await userManager.FindByIdAsync(userId);
-            //    if (user == null)
-            //    {
-            //        return Results.NotFound("User not found.");
-            //    }
-
-            //    var result = await signInManager.TwoFactorSignInAsync(TokenOptions.DefaultAuthenticatorProvider, code, isPersistent: false, rememberClient: false);
-
-            //    if (result.Succeeded)
-            //    {
-            //        return Results.Ok("2FA verification successful.");
-            //    }
-            //    else if (result.IsLockedOut)
-            //    {
-            //        return Results.StatusCode(423); // User account locked out.
-            //    }
-            //    else
-            //    {
-            //        return Results.BadRequest("Invalid 2FA code.");
-            //    }
-            //});
-
-        }
+            }
 
         private static void VerifyRequestCookiesExist(HttpContext context)
         {
