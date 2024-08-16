@@ -41,6 +41,14 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                         {
                             context.Token = context.Request.Cookies["jwtToken"];
                         }
+                        else
+                        {
+                            
+                            logger.Error("JWT token missing");
+
+                            context.Fail("JWT token missing.");
+                        }
+
                         return Task.CompletedTask;
                     },
                     OnTokenValidated = context =>

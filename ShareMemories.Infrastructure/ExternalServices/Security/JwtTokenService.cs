@@ -57,14 +57,17 @@ namespace ShareMemories.Infrastructure.ExternalServices.Security
 
         public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
-            // for the principal we are not interested in ValidateAudience, ValidateIssuer or ValidateLifetime
+            // for the claim principal we are not interested in ValidateAudience, ValidateIssuer or ValidateLifetime
             var tokenValidationParameters = new TokenValidationParameters
             {
-                ValidateAudience = false,
-                ValidateIssuer = false,
+                ValidateActor = true,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                RequireExpirationTime = true,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
-                ValidateLifetime = false // Here we are saying that we don't care about the token's expiration date
+                ValidIssuer = _configuration.GetSection("Jwt:Issuer").Value,
+                ValidAudience = _configuration.GetSection("Jwt:Audience").Value,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("Jwt:Key").Value!)),
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
