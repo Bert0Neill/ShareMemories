@@ -26,7 +26,7 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 var result = await authService.RegisterUserAsync(user);
 
-                if (result.IsLoggedIn) return TypedResults.Ok(result.Message);
+                if (result.IsStatus) return TypedResults.Ok(result.Message);
                 else return TypedResults.BadRequest(result.Message);
 
             }).WithName("RegisterAsync")
@@ -48,7 +48,7 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 var loginResult = await authService.LoginAsync(user);
 
-                if (loginResult.IsLoggedIn)
+                if (loginResult.IsStatus)
                 {
 #if DEBUG
                     return Results.Ok(loginResult); // testing with JWT Token in Swagger - development ONLY!!!
@@ -78,7 +78,7 @@ namespace ShareMemories.API.Endpoints.Auth
 
                 var loginResult = await authService.RefreshTokenAsync(context.Request.Cookies["jwtToken"]!, context.Request.Cookies["jwtRefreshToken"]!);
 
-                if (loginResult.IsLoggedIn)
+                if (loginResult.IsStatus)
                 {
 
 #if DEBUG
@@ -109,7 +109,7 @@ namespace ShareMemories.API.Endpoints.Auth
 
                 var response = await authService.LogoutAsync(context.Request.Cookies["jwtToken"]!);
 
-                if (!response.IsLoggedIn) return TypedResults.Ok(response.Message);
+                if (!response.IsStatus) return TypedResults.Ok(response.Message);
                 else return TypedResults.NotFound(response.Message);
 
             })
@@ -131,7 +131,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 VerifyRequestCookiesExist(context);
 
                 // Revoke the Refresh Token
-                var response = await authService.RevokeRefreshTokenAsync(context.Request.Cookies["jwtToken"]!);
+                var response = await authService.RevokeTokenLogoutAsync(context.Request.Cookies["jwtToken"]!);
 
                 // was the Refresh Token revoked successfully
                 if (!response.IsRefreshRevoked) return TypedResults.NotFound(response.Message);
@@ -159,7 +159,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 var response = await authService.VerifyEmailConfirmationAsync(userName, token);
 
                 // was the email confirmation successful
-                if (!response.IsLoggedIn) return TypedResults.NotFound(response.Message);
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
                 
             })
@@ -183,7 +183,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 var response = await authService.VerifyPasswordResetAsync(userName, token, password);
 
                 // was the email confirmation successful
-                if (!response.IsLoggedIn) return TypedResults.NotFound(response.Message);
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
             })
             .WithName("VerifyPasswordReset")
@@ -204,7 +204,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 var response = await authService.RequestPasswordResetAsync(userName);
 
                 // was the email confirmation successful
-                if (!response.IsLoggedIn) return TypedResults.NotFound(response.Message);
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
             })
             .WithName("RequestPasswordReset")
@@ -217,77 +217,74 @@ namespace ShareMemories.API.Endpoints.Auth
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
-            /*******************************************************************************************************
-             *                                  2 Factor Authentication Actions                                    *
-             *******************************************************************************************************/
-            group.MapPost("/enable-2fa", async (UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, string userId, string code) =>
-            {
-                var user = await userManager.FindByIdAsync(userId);
-                if (user == null)
-                {
-                    return Results.NotFound("User not found.");
-                }
+            ///*******************************************************************************************************
+            // *                                  2 Factor Authentication Actions                                    *
+            // *******************************************************************************************************/
+            //group.MapPost("/enable-2fa", async (UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, string userId, string code) =>
+            //{
+            //    var user = await userManager.FindByIdAsync(userId);
+            //    if (user == null)
+            //    {
+            //        return Results.NotFound("User not found.");
+            //    }
 
-                var is2faTokenValid = await userManager.VerifyTwoFactorTokenAsync(user, userManager.Options.Tokens.AuthenticatorTokenProvider, code);
-                if (!is2faTokenValid)
-                {
-                    return Results.BadRequest("Invalid 2FA code.");
-                }
+            //    var is2faTokenValid = await userManager.VerifyTwoFactorTokenAsync(user, userManager.Options.Tokens.AuthenticatorTokenProvider, code);
+            //    if (!is2faTokenValid)
+            //    {
+            //        return Results.BadRequest("Invalid 2FA code.");
+            //    }
 
-                user.TwoFactorEnabled = true;
-                var result = await userManager.UpdateAsync(user);
+            //    user.TwoFactorEnabled = true;
+            //    var result = await userManager.UpdateAsync(user);
 
-                if (result.Succeeded)
-                {
-                    return Results.Ok("2FA is enabled for the user.");
-                }
+            //    if (result.Succeeded)
+            //    {
+            //        return Results.Ok("2FA is enabled for the user.");
+            //    }
 
-                return Results.BadRequest("Failed to enable 2FA.");
-            });
+            //    return Results.BadRequest("Failed to enable 2FA.");
+            //});
 
-            group.MapGet("/generate-2fa-code", async (UserManager<IdentityUser> userManager, string userId) =>
-            {
-                var user = await userManager.FindByIdAsync(userId);
-                if (user == null)
-                {
-                    return Results.NotFound("User not found.");
-                }
+            //group.MapGet("/generate-2fa-code", async (UserManager<IdentityUser> userManager, string userId) =>
+            //{
+            //    var user = await userManager.FindByIdAsync(userId);
+            //    if (user == null)
+            //    {
+            //        return Results.NotFound("User not found.");
+            //    }
 
-                if (!user.TwoFactorEnabled)
-                {
-                    return Results.BadRequest("2FA is not enabled for this user.");
-                }
+            //    if (!user.TwoFactorEnabled)
+            //    {
+            //        return Results.BadRequest("2FA is not enabled for this user.");
+            //    }
 
-                var code = await userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider);
-                return Results.Ok(new { Code = code });
-            });
+            //    var code = await userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider);
+            //    return Results.Ok(new { Code = code });
+            //});
 
-            group.MapPost("/verify-2fa", async (UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, string userId, string code) =>
-            {
-                var user = await userManager.FindByIdAsync(userId);
-                if (user == null)
-                {
-                    return Results.NotFound("User not found.");
-                }
+            //group.MapPost("/verify-2fa", async (UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, string userId, string code) =>
+            //{
+            //    var user = await userManager.FindByIdAsync(userId);
+            //    if (user == null)
+            //    {
+            //        return Results.NotFound("User not found.");
+            //    }
 
-                var result = await signInManager.TwoFactorSignInAsync(TokenOptions.DefaultAuthenticatorProvider, code, isPersistent: false, rememberClient: false);
+            //    var result = await signInManager.TwoFactorSignInAsync(TokenOptions.DefaultAuthenticatorProvider, code, isPersistent: false, rememberClient: false);
 
-                if (result.Succeeded)
-                {
-                    return Results.Ok("2FA verification successful.");
-                }
-                else if (result.IsLockedOut)
-                {
-                    return Results.StatusCode(423); // User account locked out.
-                }
-                else
-                {
-                    return Results.BadRequest("Invalid 2FA code.");
-                }
-            });
-
-
-
+            //    if (result.Succeeded)
+            //    {
+            //        return Results.Ok("2FA verification successful.");
+            //    }
+            //    else if (result.IsLockedOut)
+            //    {
+            //        return Results.StatusCode(423); // User account locked out.
+            //    }
+            //    else
+            //    {
+            //        return Results.BadRequest("Invalid 2FA code.");
+            //    }
+            //});
 
         }
 

@@ -12,14 +12,17 @@ namespace ShareMemories.API.Extensions.AppBuilder
     {
         public static void ConfigureMiddleware(this IApplicationBuilder app, IHostEnvironment env)
         {
-            // Add the middleware
+            // add middleware for global (API) error handling
             app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-            // Apply security middleware
+            // add middleware to verify JWT hasn't been revoked
+            app.UseMiddleware<TokenRevocationMiddleware>();
+
+            // apply security middleware
             app.UseAuthentication(); // Authenticate the token
             app.UseAuthorization();  // Authorize based on roles/policies
 
-            // Use Output Caching
+            // add API Output Caching
             app.UseOutputCache();
 
             // Configure the HTTP request pipeline.
@@ -31,7 +34,7 @@ namespace ShareMemories.API.Extensions.AppBuilder
 
             app.UseHttpsRedirection();
 
-            app.UseCors("AllowSpecificOrigins"); // apply the CORS policy
+            app.UseCors("AllowSpecificOrigins"); // apply our custom CORS policy
         }
 
         public static void ConfigureEndpoints(this WebApplication app)

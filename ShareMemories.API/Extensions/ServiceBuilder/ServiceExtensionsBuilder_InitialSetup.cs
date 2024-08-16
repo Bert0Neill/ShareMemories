@@ -19,9 +19,12 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
     {
         public static void AddServicesInitialSetup(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
         {
-            //// Add global error handler middleware
-            //services.AddProblemDetails();
-            //services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
+            // Add global error handler middleware // ToDo
+            services.AddProblemDetails();
+            services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
+
+            // Register the IMemoryCache service for revoking invalidated JWT's
+            services.AddMemoryCache(); 
 
             // Add DTO model validation (from client)
             services.AddValidatorsFromAssemblyContaining(typeof(PictureValidator));

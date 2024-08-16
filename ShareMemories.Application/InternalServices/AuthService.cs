@@ -3,12 +3,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Infrastructure.Interfaces;
 using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 namespace ShareMemories.Infrastructure.Services
@@ -23,11 +27,10 @@ namespace ShareMemories.Infrastructure.Services
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IEmailSender _emailSender;
-
+        private readonly IMemoryCache _memoryCache;
+        private readonly ILogger<AuthService> _logger;
         private bool _isRefreshing = false;
-        private const int REFRESH_TOKEN_EXPIRE_DAYS = 10;
-        private const int JWT_TOKEN_EXPIRE_MINS = 30;        
-        public AuthService(UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService, SignInManager<ExtendIdentityUser> signInManager, IHttpContextAccessor httpContextAccessor, IEmailSender emailSender)
+        public AuthService(ILogger<AuthService> logger, IMemoryCache memoryCache, UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService, SignInManager<ExtendIdentityUser> signInManager, IHttpContextAccessor httpContextAccessor, IEmailSender emailSender)
         {
             _userManager = userManager;
             _config = config;
@@ -35,6 +38,8 @@ namespace ShareMemories.Infrastructure.Services
             _signInManager = signInManager;
             _httpContextAccessor = httpContextAccessor;
             _emailSender = emailSender;
+            _memoryCache = memoryCache; 
+            _logger = logger;
         }
 
         #region APIs
@@ -45,14 +50,14 @@ namespace ShareMemories.Infrastructure.Services
             var response = new LoginRegisterRefreshResponseDto(); // "IsLoggedIn" will be false by default
             var identityUser = await _userManager.FindByNameAsync(user.UserName);
 
-            IList<string> roles = await VerifyUserIdentityAsync(user, identityUser); // checks to verify a valid user - a BadRequest is thrown otherwise
+            IList<string> roles = await VerifyUserIdentityReturnRolesAsync(user, identityUser); // checks to verify a valid user - a BadRequest is thrown otherwise
 
-            response.IsLoggedIn = true;
-            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
+            response.IsStatus = true;
+            response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, int.Parse(_config["Jwt:JWT_TOKEN_EXPIRE_MINS"]!));
             response.JwtRefreshToken = _jwtTokenService.GenerateRefreshToken(); // generate a new refresh token the user logs in - improves security
             response.Message = "User logged in successfully";
-            response.JwtRefreshTokenExpire = DateTimeOffset.UtcNow.AddDays(REFRESH_TOKEN_EXPIRE_DAYS).UtcDateTime;
-            response.JwtTokenExpire = DateTimeOffset.UtcNow.AddMinutes(JWT_TOKEN_EXPIRE_MINS).UtcDateTime;
+            response.JwtRefreshTokenExpire = DateTimeOffset.UtcNow.AddDays(int.Parse(_config["Jwt:REFRESH_TOKEN_EXPIRE_DAYS"]!)).UtcDateTime;
+            response.JwtTokenExpire = DateTimeOffset.UtcNow.AddMinutes(int.Parse(_config["Jwt:JWT_TOKEN_EXPIRE_MINS"]!)).UtcDateTime;
 
             // populate identityUser, so that we can update the database table with a new Refresh Token 
             identityUser.RefreshToken = response.JwtRefreshToken;
@@ -62,7 +67,7 @@ namespace ShareMemories.Infrastructure.Services
             var result = await _userManager.UpdateAsync(identityUser);
             if (!result.Succeeded)
             {
-                response.IsLoggedIn = true; // user is still logged in
+                response.IsStatus = true; // user is still logged in
                 var errors = new StringBuilder();
                 result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
                 response.Message = errors.ToString();
@@ -121,7 +126,7 @@ namespace ShareMemories.Infrastructure.Services
                     await SendEmailTaskAsync(identityUser, verificationCode, true);
 
                     registerResponseDto.Message = $"Username: {user.UserName} registered successfully. A confirmation email has been sent to {identityUser.Email}, you will need to click the link within the email to complete the registration. Check your Spam folder if it isn't in your Inbox.";
-                    registerResponseDto.IsLoggedIn = true; // doubling up the IsLoggedIn property to indicate if user was successfully registered or not
+                    registerResponseDto.IsStatus = true; // doubling up the IsLoggedIn property to indicate if user was successfully registered or not
                 }
             }
 
@@ -159,19 +164,19 @@ namespace ShareMemories.Infrastructure.Services
 
                     var roles = await _userManager.GetRolesAsync(identityUser); // retrieve role(s) to append to Claims in JWT bearer token
 
-                    response.IsLoggedIn = true;
-                    response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, JWT_TOKEN_EXPIRE_MINS);
+                    response.IsStatus = true;
+                    response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, int.Parse(_config["Jwt:JWT_TOKEN_EXPIRE_MINS"]!));
                     response.JwtRefreshToken = _jwtTokenService.GenerateRefreshToken();
 
                     // update AspNetUser DB table with latest details 
                     identityUser.RefreshToken = response.JwtRefreshToken;
-                    identityUser.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(REFRESH_TOKEN_EXPIRE_DAYS).UtcDateTime; // refresh token should be longer than JWT bearer token
+                    identityUser.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(int.Parse(_config["Jwt:REFRESH_TOKEN_EXPIRE_DAYS"]!)).UtcDateTime; // refresh token should be longer than JWT bearer token
                     identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
 
                     var result = await _userManager.UpdateAsync(identityUser);
                     if (!result.Succeeded)
                     {
-                        response.IsLoggedIn = true; // user is still logged in
+                        response.IsStatus = true; // user is still logged in
                         var errors = new StringBuilder();
                         result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
                         response.Message = errors.ToString();
@@ -199,7 +204,7 @@ namespace ShareMemories.Infrastructure.Services
             // not able to retrieve user from Jwt bearer token
             if (principal?.Identity?.Name is null)
             {
-                response.IsLoggedIn = true; // user is still logged in
+                response.IsStatus = true; // user is still logged in
                 response.Message = "Jwt Bearer not valid, during logout process";                
             }
             else
@@ -216,7 +221,7 @@ namespace ShareMemories.Infrastructure.Services
                 // handle a database fail
                 if (!result.Succeeded)
                 {
-                    response.IsLoggedIn = true; // user is still logged in
+                    response.IsStatus = true; // user is still logged in
                     var errors = new StringBuilder();
                     result.Errors.ToList().ForEach(err => errors.AppendLine($"• {err.Description}")); // build up a string of faults
                     response.Message = errors.ToString();
@@ -233,11 +238,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> RevokeRefreshTokenAsync(string jwtToken)
+        public async Task<LoginRegisterRefreshResponseDto> RevokeTokenLogoutAsync(string jwtToken)
         {
             Guard.Against.Null(jwtToken, null, "Token not valid");
             
-            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked refresh token" }; // default message
+            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked JWT token" }; // default message
 
             var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
@@ -258,7 +263,7 @@ namespace ShareMemories.Infrastructure.Services
                     return response;
                 }
 
-                // clear the refresh token
+                // clear the refresh token & update database
                 identityUser!.RefreshToken = null;
                 identityUser.RefreshTokenExpiry = null;
                 identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
@@ -275,13 +280,32 @@ namespace ShareMemories.Infrastructure.Services
                 }
                 else // success
                 {
-                    // sign out & remove cookies from response to client
+                    // sign out & remove cookies from response to client - force user to log back in (thus generating new tokens)
                     await _signInManager.SignOutAsync();
-                    _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtToken");
-                    _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwtRefreshToken");
+                    _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtToken");
+                    _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtRefreshToken");
+
+                    // store revoked JWT Id in IMemory cache (with sliding timespan)
+                    var tokenHandler = new JwtSecurityTokenHandler();
+                    var jwtTokenObject = tokenHandler.ReadJwtToken(jwtToken);
+                    var jti = jwtTokenObject?.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Jti)?.Value;
+
+                    if (jti == null)
+                    {
+                        response.IsRefreshRevoked = false;
+                        response.Message = "Invalid JWT to revoke";
+                    }
+                    else
+                    {                        
+                        var expiration = jwtTokenObject!.ValidTo - DateTime.UtcNow; // calculate the token's remaining validity period
+
+                        // Cache the revoked token's JTI with an sliding (expiry) timespan equal to the token's remaining validity (thus keeping cache clean)
+                        _memoryCache.Set(jti, true, expiration);
+
+                        _logger.LogInformation($"JWT Bearer {jti} was revoked by user {principal.Identity.Name}. Currently {expiration} left before expires");
+                    }
                 }
             }
-
             return response;
         }
 
@@ -298,7 +322,7 @@ namespace ShareMemories.Infrastructure.Services
             {
                 var result = await _userManager.ConfirmEmailAsync(identityUser, token);
 
-                if (result.Succeeded) response.IsLoggedIn = true;
+                if (result.Succeeded) response.IsStatus = true;
                 else
                 {
                     var errors = new StringBuilder();
@@ -323,7 +347,7 @@ namespace ShareMemories.Infrastructure.Services
             {
                 var token = await _userManager.GeneratePasswordResetTokenAsync(identityUser);
                 await SendEmailTaskAsync(identityUser, token, false);
-                response.IsLoggedIn = true; // double up for validating password sent successfully
+                response.IsStatus = true; // double up for validating password sent successfully
             }
 
             return response;
@@ -343,7 +367,7 @@ namespace ShareMemories.Infrastructure.Services
             {
                 var result = await _userManager.ResetPasswordAsync(identityUser, token, password);
 
-                if (result.Succeeded) response.IsLoggedIn = true;
+                if (result.Succeeded) response.IsStatus = true;
                 else
                 {
                     var errors = new StringBuilder();
@@ -403,7 +427,7 @@ namespace ShareMemories.Infrastructure.Services
 
             await _emailSender.SendEmailAsync(identityUser.Email, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
         }
-        private async Task<IList<string>> VerifyUserIdentityAsync(LoginUserDto user, ExtendIdentityUser? identityUser)
+        private async Task<IList<string>> VerifyUserIdentityReturnRolesAsync(LoginUserDto user, ExtendIdentityUser? identityUser)
         {
             // verify user exists - a BadRequest will be thrown in Global Error Handler (middleware)
             Guard.Against.Null(identityUser, null, "User credentials not valid");
@@ -424,8 +448,8 @@ namespace ShareMemories.Infrastructure.Services
             // reset the cookies in the response
             CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;
             GenerateCookieOptions(response.JwtTokenExpire, response.JwtRefreshTokenExpire, out cookieOptionsJWT, out cookieOptionsRefreshJWT);
-            _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtToken", response.JwtToken, cookieOptionsJWT);
-            _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtRefreshToken", response.JwtRefreshToken, cookieOptionsRefreshJWT);
+            _httpContextAccessor.HttpContext?.Response.Cookies.Append("jwtToken", response.JwtToken, cookieOptionsJWT);
+            _httpContextAccessor.HttpContext?.Response.Cookies.Append("jwtRefreshToken", response.JwtRefreshToken, cookieOptionsRefreshJWT);
         }
         private static void GenerateCookieOptions(DateTimeOffset JwtTokenExpire, DateTimeOffset JwtRefreshTokenExpire, out CookieOptions cookieOptionsJWT, out CookieOptions cookieOptionsRefreshJWT)
         {

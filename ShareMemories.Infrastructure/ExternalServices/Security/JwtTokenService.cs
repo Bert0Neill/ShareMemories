@@ -28,7 +28,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Security
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // used to make a token unique (later used in Revoking a token)
                 new Claim(ClaimTypes.Name, user.UserName!)
             };
 
@@ -57,6 +57,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Security
 
         public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
+            // for the principal we are not interested in ValidateAudience, ValidateIssuer or ValidateLifetime
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateAudience = false,
@@ -70,6 +71,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Security
             var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
 
             var jwtSecurityToken = securityToken as JwtSecurityToken;
+            
             if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
                 throw new SecurityTokenException("Invalid token");
 
