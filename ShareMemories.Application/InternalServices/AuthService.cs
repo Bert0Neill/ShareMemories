@@ -343,6 +343,32 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
+        public async Task<LoginRegisterRefreshResponseDto> ResendConfirmationEmailAsync(string userName)
+        {
+            Guard.Against.Null(userName, null, "User credentials not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = $"A new confirmation email has been sent - check your Spam folder." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser == null) response.Message = "Invalid credentials supplied.";
+            else
+            {
+                if (identityUser.EmailConfirmed)
+                {
+                    response.Message = "Email address associated with your Username, has already been confirmed.";
+                }
+                else
+                {
+                    string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser); // generate token to be used in URL
+                    await SendEmailTaskAsync(identityUser, verificationCode, true);
+                    response.IsStatus = true;
+                }
+            }
+
+            return response;
+        }
+
         public async Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string userName, string token, string password)
         {
             Guard.Against.Null(userName, null, "User credentials not valid");

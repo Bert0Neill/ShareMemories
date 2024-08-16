@@ -203,7 +203,7 @@ namespace ShareMemories.API.Endpoints.Auth
 
                 var response = await authService.RequestPasswordResetAsync(userName);
 
-                // was the email confirmation successful
+                // was the password reset email sent successfully
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
             })
@@ -216,6 +216,31 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Request a password reset email.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
+
+
+            /*******************************************************************************************************
+             *          Request that a new confirmation email be sent (to complete registration process            *
+             *******************************************************************************************************/
+            group.MapGet("/ResendConfirmationEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+
+                var response = await authService.ResendConfirmationEmailAsync(userName);
+
+                // was the email confirmation sent successfully
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+            })
+            .WithName("ResendConfirmationEmail")
+            //.RequireAuthorization()
+            //.WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Request new email confirmation",
+                Description = "Request a new email confirmation, to complete registration",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+            
 
             ///*******************************************************************************************************
             // *                                  2 Factor Authentication Actions                                    *
