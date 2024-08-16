@@ -225,7 +225,7 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.ResendConfirmationEmailAsync(userName);
+                var response = await authService.RequestConfirmationEmailAsync(userName);
 
                 // was the email confirmation sent successfully
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);

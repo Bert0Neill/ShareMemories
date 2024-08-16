@@ -343,7 +343,7 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> ResendConfirmationEmailAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseDto> RequestConfirmationEmailAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials not valid");
 
