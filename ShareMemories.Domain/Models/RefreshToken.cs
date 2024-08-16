@@ -8,8 +8,8 @@ namespace ShareMemories.Domain.Models
 {
     public class RefreshToken
     {
-        public string JwtToken { get; set; }
-        public string JwtRefreshToken { get; set; }
+        public string JwtToken { get; set; } = string.Empty;    
+        public string JwtRefreshToken { get; set; } = string.Empty;
 
         public DateTime JwtRefreshTokenExpire { get; set; } = DateTime.Now;
         public DateTime JwtTokenExpire { get; set; } = DateTime.Now;

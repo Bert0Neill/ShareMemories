@@ -121,22 +121,20 @@ namespace ShareMemories.API.Endpoints.Auth
                 Summary = "Logout user",
                 Description = "Logout user and delete their cached JWT token.",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
-            });            
+            });
 
             /*******************************************************************************************************
              *          Allow user to revoke the Refresh Token if they think it has been compromised               *
              *******************************************************************************************************/
-            group.MapPost("/RevokeAsync", async Task<Results<Ok<string>, NotFound<string>>>  (HttpContext context, IAuthService authService) =>
+            group.MapPost("/RevokeAsync", async Task<Results<Ok<string>, NotFound<string>>> (HttpContext context, IAuthService authService) =>
             {
-                VerifyRequestCookiesExist(context);
+                VerifyRequestCookiesExist(context); // before revoking, make sure they exist
 
-                // Revoke the Refresh Token
                 var response = await authService.RevokeTokenLogoutAsync(context.Request.Cookies["jwtToken"]!);
 
                 // was the Refresh Token revoked successfully
-                if (!response.IsRefreshRevoked) return TypedResults.NotFound(response.Message);
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
-
             })
             .WithName("Revoke")
             .RequireAuthorization()
@@ -161,7 +159,6 @@ namespace ShareMemories.API.Endpoints.Auth
                 // was the email confirmation successful
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
-                
             })
             .WithName("ConfirmEmail")
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -241,9 +238,9 @@ namespace ShareMemories.API.Endpoints.Auth
 
 
             /*******************************************************************************************************
-             *                                         Verify user's 2FA                                           *
+             *   Verify user's 2FA (API not secure as user must be able to use it as part of logged in process)    *
              *******************************************************************************************************/
-            group.MapGet("/Verify2faAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string code, IAuthService authService) =>            
+            group.MapGet("/Verify2faAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string code, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(code, "Code is missing");
@@ -252,11 +249,9 @@ namespace ShareMemories.API.Endpoints.Auth
 
                 // was the email confirmation sent successfully
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);                
+                else return TypedResults.Ok(response.Message);
             })
              .WithName("Verify2fa")
-            //.RequireAuthorization()
-            //.WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "Verify user login with 2FA",
@@ -264,7 +259,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
-            }
+        }
 
         private static void VerifyRequestCookiesExist(HttpContext context)
         {

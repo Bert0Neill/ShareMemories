@@ -8,12 +8,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using ShareMemories.Application.Interfaces;
+using ShareMemories.Application.Resources;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Entities;
+using ShareMemories.Domain.Enums;
 using ShareMemories.Infrastructure.Interfaces;
 using System;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
+using System.Resources;
 using System.Security.Claims;
 using System.Text;
 
@@ -45,42 +48,6 @@ namespace ShareMemories.Infrastructure.Services
         }
 
         #region APIs
-        public async Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user)
-        {
-            Guard.Against.Null(user, null, "User credentials not valid");
-
-            var response = new LoginRegisterRefreshResponseDto(); // "IsStatus" will be false by default
-            var identityUser = await _userManager.FindByNameAsync(user.UserName);
-
-            if (identityUser is null)
-            {                
-                response.Message = $"Credentials not valid";
-                return response;
-            }
-
-            await ValidateUserIdentityAsync(user, identityUser); // checks to verify a valid user - a BadRequest is thrown otherwise            
-            IList<string> roles = await VerifyUserRolesAsync(identityUser); // retrieve their roles (at least 1 must exist)
-
-            // try to sign the user in
-            SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser!, user.Password, false, true);
-
-            if (loginResult.IsLockedOut || loginResult.IsNotAllowed)
-            {
-                response.Message = "Account currently locked out (wait 10 minutes) or you are not allowed to sign-in.";
-            }
-            else if (loginResult.RequiresTwoFactor) // valid user at this stage - determine if 2FA is enabled and halt login- send 2fa email
-            {
-                //await _signInManager.SignOutAsync();
-                //await _signInManager.PasswordSignInAsync(identityUser, user.Password, false, true);
-
-                await SendTwoFactorAuthenticationAsync(identityUser!);
-                response.Message = "Two-factor authentication is enabled on your account. You have been sent an email with a OTP, click on the link to complete your login.";
-            }
-            else await AssignJwtTokensResponse(response, identityUser, roles);
-
-            return response;
-        }
-
         public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user)
         {
             Guard.Against.Null(user, null, "User credentials not valid");
@@ -129,7 +96,7 @@ namespace ShareMemories.Infrastructure.Services
                 else // success registering user & role
                 {
                     string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser); // generate token to be used in URL
-                    await SendEmailTaskAsync(identityUser, verificationCode, "Confirmation Email");
+                    await SendEmailTaskAsync(identityUser, verificationCode, EmailType.ConfirmationEmail);
 
                     registerResponseDto.Message = $"Username: {user.UserName} registered successfully. A confirmation email has been sent to {identityUser.Email}, you will need to click the link within the email to complete the registration. Check your Spam folder if it isn't in your Inbox.";
                     registerResponseDto.IsStatus = true; // doubling up the IsLoggedIn property to indicate if user was successfully registered or not
@@ -139,6 +106,84 @@ namespace ShareMemories.Infrastructure.Services
             return registerResponseDto;
         }
 
+        public async Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user)
+        {
+            Guard.Against.Null(user, null, "User credentials not valid");
+
+            var response = new LoginRegisterRefreshResponseDto(); // "IsStatus" will be false by default
+            var identityUser = await _userManager.FindByNameAsync(user.UserName);
+
+            if (identityUser is null)
+            {                
+                response.Message = $"Credentials not valid";
+                return response;
+            }
+
+            await ValidateUserIdentityAsync(user, identityUser); // checks to verify a valid user - a BadRequest is thrown otherwise            
+            IList<string> roles = await VerifyUserRolesAsync(identityUser); // retrieve their roles (at least 1 must exist)
+
+            // try to sign the user in
+            SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser!, user.Password, false, true);
+
+            if (loginResult.IsLockedOut || loginResult.IsNotAllowed)
+            {
+                response.Message = "Account currently locked out (wait 10 minutes) or you are not allowed to sign-in.";
+            }
+            else if (loginResult.RequiresTwoFactor) // valid user at this stage - determine if 2FA is enabled and halt login- send 2fa email
+            {
+                await SendTwoFactorAuthenticationAsync(identityUser!);
+                response.Message = "Two-factor authentication is enabled on your account. You have been sent an email with a OTP, click on the link to complete your login.";
+            }
+            else await AssignJwtTokensResponse(response, identityUser, roles);
+
+            return response;
+        }
+
+        public async Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken)
+        {
+            Guard.Against.Null(jwtToken, null, "Token not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully logged out" }; // default message
+
+            var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
+
+            // not able to retrieve user from Jwt bearer token
+            if (principal?.Identity?.Name is null)
+            {
+                response.IsStatus = true; // user is still logged in
+                response.Message = "Jwt Bearer not valid, during logout process";
+            }
+            else
+            {
+                var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name); // retrieve user principal
+
+                // clear the refresh token
+                identityUser!.RefreshToken = null;
+                identityUser.RefreshTokenExpiry = null;
+                identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
+
+                var result = await _userManager.UpdateAsync(identityUser); // Update the user in the database
+
+                // handle a database fail
+                if (!result.Succeeded)
+                {
+                    response.IsStatus = true; // user is still logged in
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"{err.Description}")); // build up a string of faults
+                    response.Message = errors.ToString();
+                }
+                else
+                {
+                    // remove cookies form response to client
+                    await _signInManager.SignOutAsync();
+                    _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtToken");
+                    _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtRefreshToken");
+                }
+            }
+
+            return response;
+        }
+        
         public async Task<LoginRegisterRefreshResponseDto> RefreshTokenAsync(string jwtToken, string refreshToken)
         {
             var response = new LoginRegisterRefreshResponseDto();
@@ -206,73 +251,28 @@ namespace ShareMemories.Infrastructure.Services
             finally { _isRefreshing = false; } // reset for next refresh call
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken)
-        {
-            Guard.Against.Null(jwtToken, null, "Token not valid");
-
-            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully logged out" }; // default message
-
-            var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
-
-            // not able to retrieve user from Jwt bearer token
-            if (principal?.Identity?.Name is null)
-            {
-                response.IsStatus = true; // user is still logged in
-                response.Message = "Jwt Bearer not valid, during logout process";
-            }
-            else
-            {
-                var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name); // retrieve user principal
-
-                // clear the refresh token
-                identityUser!.RefreshToken = null;
-                identityUser.RefreshTokenExpiry = null;
-                identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
-
-                var result = await _userManager.UpdateAsync(identityUser); // Update the user in the database
-
-                // handle a database fail
-                if (!result.Succeeded)
-                {
-                    response.IsStatus = true; // user is still logged in
-                    var errors = new StringBuilder();
-                    result.Errors.ToList().ForEach(err => errors.AppendLine($"{err.Description}")); // build up a string of faults
-                    response.Message = errors.ToString();
-                }
-                else
-                {
-                    // remove cookies form response to client
-                    await _signInManager.SignOutAsync();
-                    _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtToken");
-                    _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtRefreshToken");
-                }
-            }
-
-            return response;
-        }
-
         public async Task<LoginRegisterRefreshResponseDto> RevokeTokenLogoutAsync(string jwtToken)
         {
             Guard.Against.Null(jwtToken, null, "Token not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked JWT token" }; // default message
+            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked JWT token", IsStatus = true }; // default message
 
-            var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
+            var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
             // not able to retrieve user from Jwt bearer token
-            if (principal?.Identity?.Name is null)
-            {
-                response.IsRefreshRevoked = false;
+            if (claimsPrincipal?.Identity?.Name is null)
+            {                
+                response.IsStatus = false;
                 response.Message = "Jwt Bearer not valid, during revoke process";
             }
             else
             {
-                var identityUser = await _userManager.FindByNameAsync(principal.Identity.Name); // retrieve user principal
+                var identityUser = await _userManager.FindByNameAsync(claimsPrincipal.Identity.Name); // retrieve user principal
 
                 if (identityUser is null)
                 {
-                    response.IsRefreshRevoked = false;
-                    response.Message = $"User '{principal.Identity.Name}' not found during refresh token revoke";
+                    response.IsStatus = false;
+                    response.Message = $"User '{claimsPrincipal.Identity.Name}' not found during token revoke";
                     return response;
                 }
 
@@ -286,7 +286,7 @@ namespace ShareMemories.Infrastructure.Services
                 // handle a database fail
                 if (!result.Succeeded)
                 {
-                    response.IsRefreshRevoked = false;
+                    response.IsStatus = false;
                     var errors = new StringBuilder();
                     result.Errors.ToList().ForEach(err => errors.AppendLine($"{err.Description}")); // build up a string of faults
                     response.Message = errors.ToString();
@@ -298,7 +298,7 @@ namespace ShareMemories.Infrastructure.Services
                     _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtToken");
                     _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtRefreshToken");
 
-                    CacheRevokedToken(jwtToken, response, principal);
+                    CacheRevokedToken(jwtToken, response, claimsPrincipal); // cache revoked Jwt so that an imposter can't use it (middleware checks API calls)
                 }
             }
             return response;
@@ -327,52 +327,7 @@ namespace ShareMemories.Infrastructure.Services
             }
 
             return response;
-        }
-
-        public async Task<LoginRegisterRefreshResponseDto> RequestPasswordResetAsync(string userName)
-        {
-            Guard.Against.Null(userName, null, "User credentials not valid");
-
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"A password reset request has been sent to user - {userName}." }; // default message
-
-            var identityUser = await _userManager.FindByNameAsync(userName);
-
-            if (identityUser == null) response.Message = "An invalid email or the email is not register to your account";
-            else
-            {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(identityUser);
-                await SendEmailTaskAsync(identityUser, token, "Password Reset Request");
-                response.IsStatus = true; // double up for validating password sent successfully
-            }
-
-            return response;
-        }
-
-        public async Task<LoginRegisterRefreshResponseDto> RequestConfirmationEmailAsync(string userName)
-        {
-            Guard.Against.Null(userName, null, "User credentials not valid");
-
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"A new confirmation email has been sent - check your Spam folder." }; // default message
-
-            var identityUser = await _userManager.FindByNameAsync(userName);
-
-            if (identityUser == null) response.Message = "Invalid credentials supplied.";
-            else
-            {
-                if (identityUser.EmailConfirmed)
-                {
-                    response.Message = "Email address associated with your Username, has already been confirmed.";
-                }
-                else
-                {
-                    string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser); // generate token to be used in URL
-                    await SendEmailTaskAsync(identityUser, verificationCode, "Confirmation Email");
-                    response.IsStatus = true;
-                }
-            }
-
-            return response;
-        }
+        }        
 
         public async Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string userName, string token, string password)
         {
@@ -428,6 +383,50 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
+        public async Task<LoginRegisterRefreshResponseDto> RequestPasswordResetAsync(string userName)
+        {
+            Guard.Against.Null(userName, null, "User credentials not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = $"A password reset request has been sent to user - {userName}." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser == null) response.Message = "An invalid email or the email is not register to your account";
+            else
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(identityUser);
+                await SendEmailTaskAsync(identityUser, token, EmailType.PasswordReset);
+                response.IsStatus = true; // double up for validating password sent successfully
+            }
+
+            return response;
+        }
+
+        public async Task<LoginRegisterRefreshResponseDto> RequestConfirmationEmailAsync(string userName)
+        {
+            Guard.Against.Null(userName, null, "User credentials not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = $"A new confirmation email has been sent - check your Spam folder." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser == null) response.Message = "Invalid credentials supplied.";
+            else
+            {
+                if (identityUser.EmailConfirmed)
+                {
+                    response.Message = "Email address associated with your Username, has already been confirmed.";
+                }
+                else
+                {
+                    string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser); // generate token to be used in URL
+                    await SendEmailTaskAsync(identityUser, verificationCode, EmailType.ConfirmationEmail);
+                    response.IsStatus = true;
+                }
+            }
+
+            return response;
+        }
         #endregion
 
         #region Helper Methods
@@ -461,7 +460,7 @@ namespace ShareMemories.Infrastructure.Services
         private async Task SendTwoFactorAuthenticationAsync(ExtendIdentityUser identityUser)
         {
             var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, "Email");            
-            await SendEmailTaskAsync(identityUser, verificationCode, "2FA");
+            await SendEmailTaskAsync(identityUser, verificationCode, EmailType.TwoFactorAuthentication);
         }
         private void CacheRevokedToken(string jwtToken, LoginRegisterRefreshResponseDto response, ClaimsPrincipal principal)
         {
@@ -472,7 +471,7 @@ namespace ShareMemories.Infrastructure.Services
 
             if (jti == null)
             {
-                response.IsRefreshRevoked = false;
+                response.IsStatus = false;
                 response.Message = "Invalid JWT to revoke";
             }
             else
@@ -485,68 +484,29 @@ namespace ShareMemories.Infrastructure.Services
                 _logger.LogInformation($"JWT Bearer {jti} was revoked by user {principal.Identity.Name}. Currently {expiration} left before expires");
             }
         }
-        private async Task SendEmailTaskAsync(ExtendIdentityUser identityUser, string verificationCode, string emailType)
+        private async Task SendEmailTaskAsync(ExtendIdentityUser identityUser, string verificationCode, EmailType emailType)
         {
             string subject = string.Empty;
             string message = string.Empty;
             string actionLink = string.Empty;
 
-            if (emailType == "Confirmation Email")
+            if (emailType == EmailType.ConfirmationEmail)
             {
                 actionLink = $"{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
-
-                // Build up Email Confirmation
                 subject = "Confirmation Email";
-                message = $@"
-                    Hello {identityUser.FirstName}
-
-                    Thank you for registering. Please confirm your email by clicking the link below:
-                    
-                    Confirm email link: {actionLink}
-
-                    If you did not register for this site, please ignore this email.
-
-                    Thanking you
-                    O'Neill Says!";
+                message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, actionLink);
             }
-            else if (emailType == "Password Reset Request")
+            else if (emailType == EmailType.PasswordReset)
             {
                 actionLink = $"{_config["EnvironmentResetPasswordApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
-
-                // Build up Email Confirmation
                 subject = "Password Reset Request";
-                message = $@"
-                    Hello {identityUser.FirstName}
-
-                    We received a request to reset your password. Click the link below to reset it:
-                    
-                    Reset password link: {actionLink}
-
-                    If you did not request a password reset, please ignore this email.
-
-                    Thanking you
-                    O'Neill Says!";
+                message = string.Format(ApplicationText.ResetPasswordTemplate, identityUser.FirstName, actionLink);                
             }
-            else if (emailType == "2FA")
+            else if (emailType == EmailType.TwoFactorAuthentication)
             {
                 actionLink = $"{_config["Environment2faApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
-
-                // Build up Email Confirmation
                 subject = "2 Factor Authentication - Login";
-                message = $@"
-                    Hello {identityUser.FirstName}
-
-                    You have received this 2FA email, as somebody is trying to log into your account. 
-                    If this is you, click on the link below to complete the login process:
-
-                    2FA link: {actionLink}
-
-                    If you are not trying to log into your account, ignore this email and contact our administration team at the email address below.
-
-                    Administration Email: Support@MyDomain.Com
-
-                    Thanking you
-                    O'Neill Says!";
+                message = string.Format(ApplicationText.TwoFactorAuthenticationTemplate, identityUser.FirstName, actionLink); 
             }
 
             await _emailSender.SendEmailAsync(identityUser.Email!, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
