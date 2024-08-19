@@ -1,4 +1,5 @@
 ﻿using Ardalis.GuardClauses;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -67,8 +68,8 @@ namespace ShareMemories.Infrastructure.Services
                 LastName = user.LastName,
                 DateOfBirth = user.DateOfBirth,
                 LastUpdated = DateTimeOffset.UtcNow.UtcDateTime,
-                // EmailConfirmed = true // retrieve from appsettings or allow the user to decide!
-                // TwoFactorEnabled = true // retrieve from appsettings or allow the user to decide!
+                EmailConfirmed = bool.Parse(_config.GetSection("SystemDefaults:IsEmailConfirmationRequired").Value!),
+                TwoFactorEnabled = bool.Parse(_config.GetSection("SystemDefaults:Is2FAEnabled").Value!)                
             };
 
             var result = await _userManager.CreateAsync(identityUser, user.Password);
@@ -131,7 +132,23 @@ namespace ShareMemories.Infrastructure.Services
                 await SendTwoFactorAuthenticationAsync(identityUser!);
                 response.Message = "Two-factor authentication is enabled on your account. You have been sent an email with a OTP, click on the link to complete your login.";
             }
-            else await AssignJwtTokensResponse(response, identityUser, roles);
+            else if (loginResult.Succeeded)
+            {
+                // if "remember me" is true from client, extent their login 
+                if (user.IsPersistent)
+                {
+                    var authProperties = new AuthenticationProperties
+                    {
+                        IsPersistent = true,
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddDays(int.Parse(_config.GetSection("SystemDefaults:RememberMeLifeSpan").Value!)) // Set expiration to days
+                    };                 
+
+                    // sign-in again with extended duration
+                    await _signInManager.SignInAsync(identityUser, authProperties);
+                }
+
+                await AssignJwtTokensResponse(response, identityUser, roles); // create JWT bearer
+            }
 
             return response;
         }
@@ -366,8 +383,9 @@ namespace ShareMemories.Infrastructure.Services
                 response.Message = "User not found.";
             }
             else
-            {
-                var result = await _signInManager.TwoFactorSignInAsync("Email", verificationCode, false,  false);
+            {                
+                var result = await _signInManager.TwoFactorSignInAsync(_config.GetSection("SystemDefaults:DefaultProvider").Value!, verificationCode, false,  false);
+
                 if (result.Succeeded)
                 {
                     IList<string> roles = await VerifyUserRolesAsync(identityUser); // retrieve their roles (at least 1 must exist)
@@ -456,7 +474,7 @@ namespace ShareMemories.Infrastructure.Services
         }
         private async Task SendTwoFactorAuthenticationAsync(ExtendIdentityUser identityUser)
         {
-            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, "Email");            
+            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, _config.GetSection("SystemDefaults:DefaultProvider").Value!);            
             await SendEmailTaskAsync(identityUser, verificationCode, EmailType.TwoFactorAuthentication);
         }
         private void CacheRevokedToken(string jwtToken, LoginRegisterRefreshResponseDto response, ClaimsPrincipal principal)

@@ -1,4 +1,4 @@
-﻿namespace ShareMemories.Domain.DTOs
+﻿namespace ShareMemories.SharedDto.DTOs
 {
     public class LoginRegisterRefreshResponseDto : RefreshTokenDto
     {

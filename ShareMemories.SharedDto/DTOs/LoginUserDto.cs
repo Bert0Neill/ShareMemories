@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ShareMemories.Domain.DTOs
+namespace ShareMemories.SharedDto.DTOs
 {
     public class LoginUserDto()
     {

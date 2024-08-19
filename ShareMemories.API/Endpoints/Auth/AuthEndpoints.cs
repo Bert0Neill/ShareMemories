@@ -46,8 +46,6 @@ namespace ShareMemories.API.Endpoints.Auth
              *******************************************************************************************************/
             group.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService, HttpContext context) =>
             {
-                throw new NotImplementedException("My error message...");
-
                 var loginResult = await authService.LoginAsync(user);
 
                 if (loginResult.IsStatus)

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ShareMemories.Domain.Models
+namespace ShareMemories.Domain.DTOs
 {
-    public class RefreshToken
+    public class RefreshTokenDto
     {
         public string JwtToken { get; set; } = string.Empty;    
         public string JwtRefreshToken { get; set; } = string.Empty;

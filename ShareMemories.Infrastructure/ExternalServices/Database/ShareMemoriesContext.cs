@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ShareMemories.Domain.Entities;
-using ShareMemories.Domain.Models;
-using System.Reflection.Emit;
 
 namespace ShareMemories.Infrastructure.Database;
 

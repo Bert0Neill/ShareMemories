@@ -13,11 +13,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2) Infrastructure", "2) Inf
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.1) Application", "3.1) Application", "{01325461-3DE9-40E9-BC7E-3167633D0EDD}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4) Tests", "4) Tests", "{97652883-C37C-4861-9E9D-940102A5016D}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5) Tests", "5) Tests", "{97652883-C37C-4861-9E9D-940102A5016D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3) Core", "3) Core", "{F8BDE24B-C84F-4857-8AB4-11D08DBE74FA}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5) Misc", "5) Misc", "{E4C380F1-10FC-4387-84DF-B4703AA4E6BF}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "6) Misc", "6) Misc", "{E4C380F1-10FC-4387-84DF-B4703AA4E6BF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SQL", "SQL", "{2E9F5CB3-29F8-439F-9402-8270C17F1427}"
 	ProjectSection(SolutionItems) = preProject
@@ -51,6 +51,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mailosaur", "mailosaur", "{
 		Account Details.txt = Account Details.txt
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4) SharedDto", "4) SharedDto", "{A5F850C7-B1FC-43B4-AA93-6792A4E6D5F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShareMemories.SharedDto", "ShareMemories.SharedDto\ShareMemories.SharedDto.csproj", "{939C5DAE-E621-40DB-B595-52006AAE880A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +85,10 @@ Global
 		{D9287A43-8F76-4D41-B2E8-D66602ABB512}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D9287A43-8F76-4D41-B2E8-D66602ABB512}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D9287A43-8F76-4D41-B2E8-D66602ABB512}.Release|Any CPU.Build.0 = Release|Any CPU
+		{939C5DAE-E621-40DB-B595-52006AAE880A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{939C5DAE-E621-40DB-B595-52006AAE880A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{939C5DAE-E621-40DB-B595-52006AAE880A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{939C5DAE-E621-40DB-B595-52006AAE880A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -99,6 +107,7 @@ Global
 		{AAF147C2-2D16-4534-AC9C-52940210CB67} = {E2F8ECA4-6490-4D42-9E2A-A128EDFD2FC3}
 		{0B19BF79-6032-44D2-9382-0F0575A08354} = {E4C380F1-10FC-4387-84DF-B4703AA4E6BF}
 		{4570CBF4-4C79-4A4B-8F2A-8DDDEA7C685C} = {E4C380F1-10FC-4387-84DF-B4703AA4E6BF}
+		{939C5DAE-E621-40DB-B595-52006AAE880A} = {A5F850C7-B1FC-43B4-AA93-6792A4E6D5F6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B6D2A769-3220-41F8-BDC6-26458765B5A8}

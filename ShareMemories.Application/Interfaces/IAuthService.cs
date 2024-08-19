@@ -1,7 +1,5 @@
 ﻿
-using Microsoft.AspNetCore.Identity;
 using ShareMemories.Domain.DTOs;
-using ShareMemories.Domain.Models;
 
 namespace ShareMemories.Infrastructure.Interfaces
 {

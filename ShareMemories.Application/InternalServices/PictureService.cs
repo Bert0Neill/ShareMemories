@@ -1,12 +1,6 @@
 ﻿using ShareMemories.Application.Interfaces;
 using ShareMemories.Domain.Entities;
-using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ShareMemories.Application.InternalServices
 {
