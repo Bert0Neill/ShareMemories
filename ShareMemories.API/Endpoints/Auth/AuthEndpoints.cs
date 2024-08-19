@@ -308,56 +308,58 @@ namespace ShareMemories.API.Endpoints.Auth
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
-            //// Admin permission
-            //group.MapGet("/UnlockAccount/{userName}", async (string userName, UserManager<ApplicationUser> userManager) =>
-            //{
-            //    var user = await userManager.FindByNameAsync(userName);
-            //    if (user == null) return Results.NotFound();
+           /******************************************************************************************************
+           *                             Unlock a user's account (called by Admin)                               *
+           *******************************************************************************************************/
+            group.MapGet("/UnlockAccount/{userName}", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
 
-            //    await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow);
-            //    return Results.Ok();
-            //})
-            //.WithName("UnlockAccount")
-            //.RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
-            //.WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
-            //.WithOpenApi(x => new OpenApiOperation(x)
-            //{
-            //    Summary = "Disable 2FA for a user",
-            //    Description = "Admin can disable 2FA for a user",
-            //    Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
-            //});
+                var response = await authService.Disable2FactorAuthenticationForUserAsync(userName);
 
-            //// user requests unlock
-            //group.MapPost("/UnlockRequest", async (string userName, UserManager<ApplicationUser> userManager, IEmailSender emailSender) =>
-            //{
-            //    var user = await userManager.FindByNameAsync(userName);
-            //    if (user == null) return Results.NotFound("User not found.");
+                // was the email confirmation sent successfully
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+            })
+            .WithName("UnlockAccount")
+            .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
+            .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Disable 2FA for a user",
+                Description = "Admin can disable 2FA for a user",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
 
-            //    // Generate a token to unlock the user (custom token generation logic needed)
-            //    var unlockToken = await userManager.GenerateUserTokenAsync(user, TokenOptions.DefaultProvider, "Unlock");
+           /******************************************************************************************************
+           *            User request's their account to be unlocked (email conformation sent)                    *
+           *******************************************************************************************************/
+            group.MapPost("/UnlockRequest", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
 
-            //    // Build the unlock link
-            //    var unlockLink = $"https://example.com/unlock?token={unlockToken}";
+                var response = await authService.RequestUnlockAsync(userName);
 
-            //    // Send the unlock email
-            //    await emailSender.SendEmailAsync(user.Email, "Unlock your account", $"Please unlock your account by clicking this link: {unlockLink}");
+                // was the email confirmation sent successfully
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+            });
 
-            //    return Results.Ok("Unlock email sent.");
-            //});
+            /******************************************************************************************************
+            *               Verify unlock task (user will have gotten an email to verify)                         *
+            *******************************************************************************************************/
 
-            //// link calls api to unlock with code
-            //group.MapGet("/UnlockEmailVerify", async (string token, UserManager<ApplicationUser> userManager) =>
-            //{
-            //    var user = await userManager.FindByTokenAsync(token); // Implement method to find user by token
-            //    if (user == null) return Results.NotFound("Invalid or expired token.");
+            group.MapGet("/UnlockVerifiedByEmail", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+                Guard.Against.Empty(token, "Token is missing");
 
-            //    var result = await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow);
-            //    if (result.Succeeded)
-            //    {
-            //        return Results.Ok("Account unlocked successfully.");
-            //    }
-            //    return Results.BadRequest("Failed to unlock the account.");
-            //});
+                var response = await authService.UnlockAccountAsync(userName, token);
+
+                // was the email confirmation sent successfully
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+            });
 
 
 

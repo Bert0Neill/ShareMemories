@@ -466,10 +466,11 @@ namespace ShareMemories.Infrastructure.Services
 
                     if (result.Succeeded)
                     {
+                        response.IsStatus = true;
+
                         // send user email to notify them that they have 2FA enabled                        
                         await SendEmailTaskAsync(identityUser, string.Empty, EmailType.TwoFactorAuthenticationEnabled);
                     }
-                    response.IsStatus = true;
                 }
             }
 
@@ -499,11 +500,91 @@ namespace ShareMemories.Infrastructure.Services
 
                     if (result.Succeeded)
                     {
+                        response.IsStatus = true;
+
                         // send user email to notify them that they have 2FA enabled                        
                         await SendEmailTaskAsync(identityUser, string.Empty, EmailType.TwoFactorAuthenticationDisabled);
-                    }
+                    }                    
+                }
+            }
+
+            return response;
+        }
+
+        public async Task<LoginRegisterRefreshResponseDto> UnlockAccountAsync(string userName, string token)
+        {
+            Guard.Against.Null(userName, null, "User credentials are not valid");
+            Guard.Against.Null(token, null, "Token is not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = $"User {userName}'s account has been unlocked." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser == null) response.Message = "Invalid credentials supplied.";
+            else
+            {
+                var result = await _userManager.SetLockoutEndDateAsync(identityUser, DateTimeOffset.UtcNow);
+
+                if (!result.Succeeded)
+                {
+                    response.Message = $"Not able to unlock the account of {userName}.";
+
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"{err.Description}")); // build up a string of faults
+                    response.Message = errors.ToString();
+                }
+                else
+                {                    
                     response.IsStatus = true;
                 }
+            }
+            return response;
+        }
+
+        public async Task<LoginRegisterRefreshResponseDto> LockAccountAsync(string userName)
+        {
+            Guard.Against.Null(userName, null, "User credentials are not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = $"User {userName}'s account has been locked." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser == null) response.Message = "Invalid credentials supplied.";
+            else
+            {
+                // lock user's account for a longer period (appsetting value in days - user can request unlock email)
+                var result = await _userManager.SetLockoutEndDateAsync(identityUser, DateTimeOffset.UtcNow.AddDays(int.Parse(_config.GetSection("SystemDefaults:AdminLocksAccountLifeSpan").Value!)));
+
+                if (!result.Succeeded)
+                {
+                    response.Message = $"Not able to lock the account of {userName}.";
+
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"{err.Description}")); // build up a string of faults
+                    response.Message = errors.ToString();
+                }
+                else
+                {
+                    response.IsStatus = true;
+                }
+            }
+            return response;
+        }
+
+        public async Task<LoginRegisterRefreshResponseDto> RequestUnlockAsync(string userName)
+        {            
+            Guard.Against.Null(userName, null, "User credentials are not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = $"An unlock email request has been sent to user - {userName}." }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser == null) response.Message = "An invalid email or the email is not register to your account";
+            else
+            {
+                var unlockToken = await _userManager.GenerateUserTokenAsync(identityUser, TokenOptions.DefaultProvider, "Unlock");
+                await SendEmailTaskAsync(identityUser, unlockToken, EmailType.UnlocKAccountRequested);
+                response.IsStatus = true; // double up for validating password sent successfully
             }
 
             return response;
@@ -601,6 +682,13 @@ namespace ShareMemories.Infrastructure.Services
                 subject = "2 Factor Authentication - Disabled";
                 message = string.Format(ApplicationText.DisableTwoFactorAuthenticationTemplate, identityUser.FirstName, string.Empty);
             }
+            else if (emailType == EmailType.UnlocKAccountRequested)
+            {
+                actionLink = $"{_config["EnvironmentUnlockVerifyApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
+                subject = "2 Factor Authentication - Disabled";
+                message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, actionLink);
+            }
+            
 
             await _emailSender.SendEmailAsync(identityUser.Email!, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
         }
