@@ -10,7 +10,7 @@ using System.Reflection.Emit;
 namespace ShareMemories.Infrastructure.Database;
 
 // NB using 'IdentityDbContext' not 'DbContext' because of .net roles identity DB
-public partial class ShareMemoriesContext : IdentityDbContext<ExtendIdentityUser> // : IdentityDbContext
+public partial class ShareMemoriesContext : IdentityDbContext<ExtendIdentityUser>
 {
     public ShareMemoriesContext(DbContextOptions options) : base(options) { }
 
@@ -46,24 +46,6 @@ public partial class ShareMemoriesContext : IdentityDbContext<ExtendIdentityUser
         // Configure the primary key for IdentityUserRole
         modelBuilder.Entity<IdentityUserRole<string>>()
             .HasKey(ur => new { ur.UserId, ur.RoleId });
-
-        //// creating relationships for Migrations\deployment
-        //modelBuilder.Entity<Friendship>(entity =>
-        //{
-        //    entity.ToTable("Friendship");
-
-        //    entity.Property(e => e.IsArchived).HasDefaultValue(false);
-
-        //    //entity.HasOne(d => d.FriendsWith).WithMany(p => p.FriendshipFriendsWiths)
-        //    //    .HasForeignKey(d => d.FriendsWithId)
-        //    //    .OnDelete(DeleteBehavior.ClientSetNull)
-        //    //    .HasConstraintName("FK_Friendship_User1");
-
-        //    //entity.HasOne(d => d.User).WithMany(p => p.FriendshipUsers)
-        //    //    .HasForeignKey(d => d.UserId)
-        //    //    .OnDelete(DeleteBehavior.ClientSetNull)
-        //    //    .HasConstraintName("FK_Friendship_User");
-        //});
 
         modelBuilder.Entity<Picture>(entity =>
         {

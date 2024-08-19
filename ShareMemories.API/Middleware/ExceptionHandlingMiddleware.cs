@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Serilog;
+using System.Net;
 
 namespace ShareMemories.API.Middleware
 {
@@ -17,15 +18,16 @@ namespace ShareMemories.API.Middleware
             {
                 await _next(context);
             }
-            catch (ArgumentNullException ex)
-            {
+            catch (Exception ex)
+            {                
                 await HandleExceptionAsync(context, ex);
             }
-            // Catch other exceptions as needed
         }
 
         private Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
+            Log.Error(ex, ex.Message);
+
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)HttpStatusCode.BadRequest; // Set the status code based on the exception
 
@@ -38,5 +40,4 @@ namespace ShareMemories.API.Middleware
             return context.Response.WriteAsJsonAsync(response);
         }
     }
-
 }

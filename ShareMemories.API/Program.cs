@@ -1,21 +1,18 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using NLog;
+using Serilog;
 using ShareMemories.API.Extensions.AppBuilder;
 using ShareMemories.API.Extensions.ServiceBuilder;
-using System.Security.Claims;
+using ShareMemories.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
-var logger = NLog.LogManager.Setup().LoadConfigurationFromFile("nlog.config").GetCurrentClassLogger();
 
 try
 {
-    builder.Services.AddCORsServices(builder.Configuration, logger); // CORs service - restrict Cross Origin Requests to your API's (I'm applying tpo all API's, but you can be more granular)
-
-    // use extension methods to configure JWT, DI, Security Policy, Response caching, DbContext, Error middleware, DTO validation, CORs & Swagger
-    builder.Services.AddServicesInitialSetup(builder.Configuration, logger);
-    builder.Services.AddServicesJwtIdentity(builder.Configuration, logger);
-    builder.Services.AddCustomServicesSwagger(builder.Configuration, logger); // configure Swagger for JWT Bearer testing
+    // configure using extensions, to keep programs.cs lean
+    builder.Services.AddServicesLogging(builder); // create logger        
+    builder.Services.AddCORsServices(builder.Configuration); // CORs service - restrict Cross Origin Requests to your API's (I'm applying tpo all API's, but you can be more granular)
+    builder.Services.AddServicesInitialSetup(builder.Configuration); // DI, Caching, DbContext, DTO validation
+    builder.Services.AddServicesJwtIdentity(builder.Configuration); // configure JWT, Policys etc.
+    builder.Services.AddCustomServicesSwagger(builder.Configuration); // configure Swagger for JWT Bearer testing
 
     var app = builder.Build();
 
@@ -23,15 +20,13 @@ try
     app.ConfigureMiddleware(app.Environment);
     app.ConfigureEndpoints();
 
+    // Register logging middleware - automatically log all method (you still make individual logs, like error handling - a separate log is created for your logs)
+    app.UseMiddleware<MethodLoggingMiddleware>(); 
+
     app.Run();
 }
 catch (Exception exception)
-{    
-    logger.Error(exception, "Stopped program because of exception");
+{        
+    Log.Logger.Error(exception,"Stopped program because of exception");
     throw;
-}
-finally
-{
-    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
-    NLog.LogManager.Shutdown();
 }

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace ShareMemories.Application.Interfaces
 {
     public interface IJwtTokenService
-    {        
+    {
         string GenerateJwtToken(ExtendIdentityUser user, IList<string> roles, int refreshExpire);
         string GenerateRefreshToken();
         ClaimsPrincipal GetPrincipalFromExpiredToken(string token);

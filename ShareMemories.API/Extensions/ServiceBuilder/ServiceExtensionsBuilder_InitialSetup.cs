@@ -3,13 +3,13 @@ using Mailosaur;
 using Mailosaur.Operations;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
 using ShareMemories.Infrastructure.Database;
 using ShareMemories.Infrastructure.ExternalServices.Database.Repositories;
 using ShareMemories.Infrastructure.ExternalServices.Email;
-using ShareMemories.Infrastructure.ExternalServices.Security;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
 
@@ -17,12 +17,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
 {
     public static class ServiceExtensionsBuilderInitialSetup
     {
-        public static void AddServicesInitialSetup(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
+        public static void AddServicesInitialSetup(this IServiceCollection services, IConfiguration configuration)
         {
-            // Add global error handler middleware // ToDo
-            services.AddProblemDetails();
-            services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
-
             // Register the IMemoryCache service for revoking invalidated JWT's
             services.AddMemoryCache(); 
 

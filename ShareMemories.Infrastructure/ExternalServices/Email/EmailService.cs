@@ -1,18 +1,13 @@
-﻿using Mailosaur.Models;
-using Mailosaur;
-using Microsoft.AspNetCore.Identity;
+﻿using Mailosaur;
+using Mailosaur.Models;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SendGrid;
-using SendGrid.Helpers.Mail;
-using Azure;
-using System.Text;
-using Mailosaur.Operations;
+using ShareMemories.Infrastructure.Interfaces;
 
 namespace ShareMemories.Infrastructure.ExternalServices.Email
 {
-    public class EmailService : IEmailSender
+    public class EmailService : IEmailSender, IEmailService
     {
 
         private readonly ILogger _logger;
@@ -23,7 +18,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Email
         {
             _configuration = configuration;
             _logger = logger;
-            _mailosaurClient = mailosaurClient; 
+            _mailosaurClient = mailosaurClient;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string message)
@@ -31,7 +26,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Email
             var response = _mailosaurClient.Messages.Create(_configuration["Mailosaur:ServerId"], new MessageCreateOptions()
             {
                 From = _configuration["Mailosaur:From"], // a valid Mailosaur email account
-                To = toEmail, 
+                To = toEmail,
                 Send = true,
                 Subject = subject,
                 Text = message

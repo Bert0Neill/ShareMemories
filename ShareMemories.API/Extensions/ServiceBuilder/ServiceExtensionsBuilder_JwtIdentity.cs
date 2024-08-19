@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using SendGrid.Extensions.DependencyInjection;
+using Serilog;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Infrastructure.Database;
 using System.Text;
@@ -10,8 +11,13 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
 {
     public static class ServiceExtensionsBuilderJwtIdentity
     {
-        public static void AddServicesJwtIdentity(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
+        public static void AddServicesJwtIdentity(this IServiceCollection services, IConfiguration configuration)
         {
+            int tokenLifeSpanMinutes = int.Parse(configuration.GetSection("SystemDefaults:ProviderTokenLifeSpan").Value);
+            int lockoutLifeSpanMinutes = int.Parse(configuration.GetSection("SystemDefaults:LockoutLifeSpan").Value);
+            int lockoutAttempts = int.Parse(configuration.GetSection("SystemDefaults:LockoutAttempts").Value);
+            
+
             // Add Bearer JWT Authentication
             services.AddAuthentication(options =>
             {
@@ -19,7 +25,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
             .AddJwtBearer(options =>
-            {
+            {                
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateActor = true,
@@ -43,9 +49,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                         }
                         else
                         {
-                            
-                            logger.Error("JWT token missing");
-
+                            Log.Logger.Information("JWT token missing");
                             context.Fail("JWT token missing.");
                         }
 
@@ -58,8 +62,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                     },
                     OnAuthenticationFailed = context =>
                     {
-                        // This event is triggered when authentication fails.
-                        logger.Log(NLog.LogLevel.Error, "An issue extracting JWT Bearer form HttpOnly Cookie");
+                        // This event is triggered when authentication fails.                        
+                        Log.Logger.Error("An issue extracting JWT Bearer form HttpOnly Cookie");
                         return Task.CompletedTask;
                     }
                 };
@@ -82,8 +86,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;      // use email for password reset
 
                 // Lockout settings.
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
-                options.Lockout.MaxFailedAccessAttempts = 3;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(lockoutLifeSpanMinutes);
+                options.Lockout.MaxFailedAccessAttempts = lockoutAttempts;
                 options.Lockout.AllowedForNewUsers = true;
 
                 // User settings.
@@ -95,12 +99,10 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
             .AddApiEndpoints()
             .AddDefaultTokenProviders();
 
-
             // configure the timeout for a Confirmation email (token), before it expires. Used as part of Registration process.
             services.Configure<DataProtectionTokenProviderOptions>(options =>
             {
-                options.TokenLifespan = TimeSpan.FromSeconds(1); // Set the token lifespan
-                //options.TokenLifespan = TimeSpan.FromHours(1); // Set the token lifespan
+                options.TokenLifespan = TimeSpan.FromMinutes(tokenLifeSpanMinutes); // Set the email token lifespan (2FA or Confirm Email in registration)
             });
 
             // Add Custom Authorization Policies

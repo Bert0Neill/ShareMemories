@@ -6,17 +6,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.Resources;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Domain.Enums;
 using ShareMemories.Infrastructure.Interfaces;
-using System;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
-using System.Resources;
 using System.Security.Claims;
 using System.Text;
 
@@ -45,7 +42,7 @@ namespace ShareMemories.Infrastructure.Services
             _emailSender = emailSender;
             _memoryCache = memoryCache;
             _logger = logger;
-        }
+    }
 
         #region APIs
         public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user)

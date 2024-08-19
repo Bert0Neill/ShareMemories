@@ -1,8 +1,10 @@
-﻿namespace ShareMemories.API.Extensions.ServiceBuilder
+﻿using Serilog;
+
+namespace ShareMemories.API.Extensions.ServiceBuilder
 {
     public static class ServiceExtensions_CORs
     {
-        public static void AddCORsServices(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
+        public static void AddCORsServices(this IServiceCollection services, IConfiguration configuration)
         {
             // retrieve the list of allowed origins from the configuration
             var corsWhitelistedDomains = configuration.GetSection("CORsWhitelistedDomains").Get<string[]>();

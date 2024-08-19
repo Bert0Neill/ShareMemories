@@ -4,7 +4,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
 {
     public static class ServiceExtensionsBuilderSwagger
     {
-        public static void AddCustomServicesSwagger(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
+        public static void AddCustomServicesSwagger(this IServiceCollection services, IConfiguration configuration)
+        //public static void AddCustomServicesSwagger(this IServiceCollection services, IConfiguration configuration, NLog.Logger logger)
         {
             services.AddEndpointsApiExplorer();
 
