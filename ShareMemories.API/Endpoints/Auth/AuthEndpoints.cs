@@ -315,7 +315,7 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.Disable2FactorAuthenticationForUserAsync(userName);
+                var response = await authService.UnlockAccountVerifiedByAdminAsync(userName);
 
                 // was the email confirmation sent successfully
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
@@ -331,9 +331,32 @@ namespace ShareMemories.API.Endpoints.Auth
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
-           /******************************************************************************************************
-           *            User request's their account to be unlocked (email conformation sent)                    *
-           *******************************************************************************************************/
+            /******************************************************************************************************
+          *                             Lock a user's account (called by Admin)                               *
+          *******************************************************************************************************/
+            group.MapGet("/UnlockAccount/{userName}", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+
+                var response = await authService.LockAccountAsync(userName);
+
+                // was the email confirmation sent successfully
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+            })
+            .WithName("UnlockAccount")
+            .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
+            .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Lock a user's account",
+                Description = "Admin can disable 2FA for a user",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+
+            /******************************************************************************************************
+            *            User request's their account to be unlocked (email conformation sent)                    *
+            *******************************************************************************************************/
             group.MapPost("/UnlockRequest", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
@@ -343,22 +366,36 @@ namespace ShareMemories.API.Endpoints.Auth
                 // was the email confirmation sent successfully
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
+            })
+            .WithName("UnlockRequest")
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "User request to unlock their account",
+                Description = "A user requests to unlock their account - email sent with link",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
             /******************************************************************************************************
-            *               Verify unlock task (user will have gotten an email to verify)                         *
+            *         Verify email link to unlock account (user will have gotten an email to verify)              *
             *******************************************************************************************************/
 
-            group.MapGet("/UnlockVerifiedByEmail", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, IAuthService authService) =>
+            group.MapGet("/UnlockRequestVerifiedByEmail", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(token, "Token is missing");
 
-                var response = await authService.UnlockAccountAsync(userName, token);
+                var response = await authService.UnlockAccountVerifiedByEmailAsync(userName, token);
 
                 // was the email confirmation sent successfully
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
+            })
+            .WithName("UnlockRequestVerifiedByEmail")
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Unlock a user's account",
+                Description = "Admin can unlock a user's account",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
 

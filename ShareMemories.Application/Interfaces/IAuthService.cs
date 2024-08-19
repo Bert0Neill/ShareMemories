@@ -20,7 +20,8 @@ namespace ShareMemories.Infrastructure.Interfaces
         Task<LoginRegisterRefreshResponseDto> Verify2faAsync(string userName, string verificationCode);
         Task<LoginRegisterRefreshResponseDto> Disable2FactorAuthenticationForUserAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> Enable2FactorAuthenticationForUserAsync(string userName);
-        Task<LoginRegisterRefreshResponseDto> UnlockAccountAsync(string userName, string token);
+        Task<LoginRegisterRefreshResponseDto> UnlockAccountVerifiedByEmailAsync(string userName, string token);
+        Task<LoginRegisterRefreshResponseDto> UnlockAccountVerifiedByAdminAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> LockAccountAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> RequestUnlockAsync(string userName);
     }
