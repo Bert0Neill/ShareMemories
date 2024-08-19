@@ -196,7 +196,7 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              *          Request password reset (this will send an email with a link to reset password)             *
              *******************************************************************************************************/
-            group.MapGet("/RequestPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            group.MapPost("/RequestPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
@@ -242,12 +242,12 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              *   Verify user's 2FA (API not secure as user must be able to use it as part of logged in process)    *
              *******************************************************************************************************/
-            group.MapGet("/Verify2faAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string code, IAuthService authService) =>
+            group.MapPost("/Verify2faAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string code, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(code, "Code is missing");
 
-                var response = await authService.Verify2faAsync(userName, code);
+                var response = await authService.Verify2FactorAuthenticationAsync(userName, code);
 
                 // was the email confirmation sent successfully
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
@@ -311,7 +311,7 @@ namespace ShareMemories.API.Endpoints.Auth
            /******************************************************************************************************
            *                             Unlock a user's account (called by Admin)                               *
            *******************************************************************************************************/
-            group.MapGet("/UnlockAccount/{userName}", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            group.MapPost("/UnlockAccountAsync/{userName}", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
@@ -321,20 +321,20 @@ namespace ShareMemories.API.Endpoints.Auth
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
             })
-            .WithName("UnlockAccount")
+            .WithName("Unlock Account - Admin")
             .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
             .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)
             {
-                Summary = "Disable 2FA for a user",
-                Description = "Admin can disable 2FA for a user",
+                Summary = "Admin unlock a User's account",
+                Description = "A feature where an Admin can unlock a User's account",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
             /******************************************************************************************************
-          *                             Lock a user's account (called by Admin)                               *
-          *******************************************************************************************************/
-            group.MapGet("/UnlockAccount/{userName}", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            *                             Lock a user's account (called by Admin)                               *
+            *******************************************************************************************************/
+            group.MapPost("/LockAccountAsync/{userName}", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
@@ -344,7 +344,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
             })
-            .WithName("UnlockAccount")
+            .WithName("Lock Account - Admin")
             .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
             .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -357,7 +357,7 @@ namespace ShareMemories.API.Endpoints.Auth
             /******************************************************************************************************
             *            User request's their account to be unlocked (email conformation sent)                    *
             *******************************************************************************************************/
-            group.MapPost("/UnlockRequest", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            group.MapPost("/UnlockRequestAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
@@ -367,7 +367,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
             })
-            .WithName("UnlockRequest")
+            .WithName("Unlock Request")
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "User request to unlock their account",
@@ -379,7 +379,7 @@ namespace ShareMemories.API.Endpoints.Auth
             *         Verify email link to unlock account (user will have gotten an email to verify)              *
             *******************************************************************************************************/
 
-            group.MapGet("/UnlockRequestVerifiedByEmail", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, IAuthService authService) =>
+            group.MapPost("/UnlockRequestVerifiedByEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(token, "Token is missing");
@@ -390,7 +390,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 if (!response.IsStatus) return TypedResults.NotFound(response.Message);
                 else return TypedResults.Ok(response.Message);
             })
-            .WithName("UnlockRequestVerifiedByEmail")
+            .WithName("Unlock Request Verified By Email")
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "Unlock a user's account",

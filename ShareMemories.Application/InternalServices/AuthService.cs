@@ -21,7 +21,6 @@ using System.Text;
 
 namespace ShareMemories.Infrastructure.Services
 {
-    // Controller Action methods
     public class AuthService : IAuthService
     {
         // class variables
@@ -499,7 +498,7 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> Verify2faAsync(string userName, string verificationCode)
+        public async Task<LoginRegisterRefreshResponseDto> Verify2FactorAuthenticationAsync(string userName, string verificationCode)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
             Guard.Against.Null(verificationCode, null, "Token is not valid");
