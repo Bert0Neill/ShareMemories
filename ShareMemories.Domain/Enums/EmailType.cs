@@ -10,6 +10,10 @@ namespace ShareMemories.Domain.Enums
     {
         ConfirmationEmail,
         PasswordReset,
-        TwoFactorAuthentication
+        TwoFactorAuthenticationLogin,
+        TwoFactorAuthenticationEnabled,
+        TwoFactorAuthenticationDisabled,
+        UnlocKAccountRequested,
+        UnlocKAccount,
     }
 }

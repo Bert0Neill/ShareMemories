@@ -15,5 +15,7 @@ namespace ShareMemories.Infrastructure.Interfaces
         Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string userName, string token, string password);
         Task<LoginRegisterRefreshResponseDto> RequestConfirmationEmailAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> Verify2faAsync(string userName, string verificationCode);
+        Task<LoginRegisterRefreshResponseDto> Disable2FactorAuthenticationForUserAsync(string userName);
+        Task<LoginRegisterRefreshResponseDto> Enable2FactorAuthenticationForUserAsync(string userName);
     }
 }

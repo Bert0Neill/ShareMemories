@@ -1,9 +1,11 @@
 ﻿using Ardalis.GuardClauses;
+using Mailosaur.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
 using ShareMemories.Domain.DTOs;
@@ -258,6 +260,107 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Allow user to authenticate themselves using a code that was emailed to them, as part of the login process (if enabled)",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
+
+            /*******************************************************************************************************
+            *                           Enforce 2FA for a specific user (called by Admin)                          *
+            *******************************************************************************************************/
+            group.MapPost("/Enable2faForUser", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+
+                var response = await authService.Enable2FactorAuthenticationForUserAsync(userName);
+
+                // was the email confirmation sent successfully
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+
+            })
+            .WithName("Enable2faForUser")
+            .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
+            .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Enable 2FA for a user",
+                Description = "Admin can enable 2FA for a user",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+
+            /******************************************************************************************************
+            *                         Revoke 2FA for a specific user (called by Admin)                            *
+            *******************************************************************************************************/
+            group.MapPost("/Disable2faForUser", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+
+                var response = await authService.Disable2FactorAuthenticationForUserAsync(userName);
+
+                // was the email confirmation sent successfully
+                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
+                else return TypedResults.Ok(response.Message);
+            })
+            .WithName("Disable2faForUser")
+            .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
+            .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Disable 2FA for a user",
+                Description = "Admin can disable 2FA for a user",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+
+            //// Admin permission
+            //group.MapGet("/UnlockAccount/{userName}", async (string userName, UserManager<ApplicationUser> userManager) =>
+            //{
+            //    var user = await userManager.FindByNameAsync(userName);
+            //    if (user == null) return Results.NotFound();
+
+            //    await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow);
+            //    return Results.Ok();
+            //})
+            //.WithName("UnlockAccount")
+            //.RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
+            //.WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
+            //.WithOpenApi(x => new OpenApiOperation(x)
+            //{
+            //    Summary = "Disable 2FA for a user",
+            //    Description = "Admin can disable 2FA for a user",
+            //    Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            //});
+
+            //// user requests unlock
+            //group.MapPost("/UnlockRequest", async (string userName, UserManager<ApplicationUser> userManager, IEmailSender emailSender) =>
+            //{
+            //    var user = await userManager.FindByNameAsync(userName);
+            //    if (user == null) return Results.NotFound("User not found.");
+
+            //    // Generate a token to unlock the user (custom token generation logic needed)
+            //    var unlockToken = await userManager.GenerateUserTokenAsync(user, TokenOptions.DefaultProvider, "Unlock");
+
+            //    // Build the unlock link
+            //    var unlockLink = $"https://example.com/unlock?token={unlockToken}";
+
+            //    // Send the unlock email
+            //    await emailSender.SendEmailAsync(user.Email, "Unlock your account", $"Please unlock your account by clicking this link: {unlockLink}");
+
+            //    return Results.Ok("Unlock email sent.");
+            //});
+
+            //// link calls api to unlock with code
+            //group.MapGet("/UnlockEmailVerify", async (string token, UserManager<ApplicationUser> userManager) =>
+            //{
+            //    var user = await userManager.FindByTokenAsync(token); // Implement method to find user by token
+            //    if (user == null) return Results.NotFound("Invalid or expired token.");
+
+            //    var result = await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow);
+            //    if (result.Succeeded)
+            //    {
+            //        return Results.Ok("Account unlocked successfully.");
+            //    }
+            //    return Results.BadRequest("Failed to unlock the account.");
+            //});
+
+
+
 
         }
 

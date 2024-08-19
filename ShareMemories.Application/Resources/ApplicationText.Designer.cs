@@ -81,6 +81,42 @@ namespace ShareMemories.Application.Resources {
         /// <summary>
         ///   Looks up a localized string similar to Hello {0}
         ///
+        ///Your 2FA by email has now been disabled. 
+        ///
+        ///If you have any questions contact our administration team at the email address below.
+        ///
+        ///Administration Email: Support@MyDomain.Com
+        ///
+        ///Thanking you
+        ///O&apos;Neill Says!.
+        /// </summary>
+        internal static string DisableTwoFactorAuthenticationTemplate {
+            get {
+                return ResourceManager.GetString("DisableTwoFactorAuthenticationTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hello {0}
+        ///
+        ///You are now enabled for 2FA by email, this is to re-enforce our security policy and for your protection online. 
+        ///
+        ///If you have any questions contact our administration team at the email address below.
+        ///
+        ///Administration Email: Support@MyDomain.Com
+        ///
+        ///Thanking you
+        ///O&apos;Neill Says!.
+        /// </summary>
+        internal static string EnableTwoFactorAuthenticationTemplate {
+            get {
+                return ResourceManager.GetString("EnableTwoFactorAuthenticationTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hello {0}
+        ///
         /// We received a request to reset your password. Click the link below to reset it:
         /// 
         /// Reset password link: {1}

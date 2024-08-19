@@ -129,6 +129,30 @@
      Thanking you
      O'Neill Says!</value>
   </data>
+  <data name="DisableTwoFactorAuthenticationTemplate" xml:space="preserve">
+    <value>Hello {0}
+
+Your 2FA by email has now been disabled. 
+
+If you have any questions contact our administration team at the email address below.
+
+Administration Email: Support@MyDomain.Com
+
+Thanking you
+O'Neill Says!</value>
+  </data>
+  <data name="EnableTwoFactorAuthenticationTemplate" xml:space="preserve">
+    <value>Hello {0}
+
+You are now enabled for 2FA by email, this is to re-enforce our security policy and for your protection online. 
+
+If you have any questions contact our administration team at the email address below.
+
+Administration Email: Support@MyDomain.Com
+
+Thanking you
+O'Neill Says!</value>
+  </data>
   <data name="ResetPasswordTemplate" xml:space="preserve">
     <value>Hello {0}
 
