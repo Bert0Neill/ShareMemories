@@ -252,9 +252,9 @@ namespace ShareMemories.API.Endpoints.Auth
 
             /*******************************************************************************************************
              *   Verify user's 2FA (API not secure as user must be able to use it as part of logged in process)    *
+             *To verify 2FA code, it has to be form the same browser tab that initiated - thus an code entry screen* 
              *******************************************************************************************************/
-            //group.MapPost("/Verify2FactorAuthenticationAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string code) =>
-            group.MapGet("/Verify2FactorAuthenticationAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string code) =>
+            group.MapPost("/Verify2FactorAuthenticationAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string code) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(code, "Code is missing");

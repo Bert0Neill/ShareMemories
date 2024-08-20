@@ -1,0 +1,458 @@
+{
+	"info": {
+		"_postman_id": "b4f83c73-f474-470b-9a14-a6f98566fd76",
+		"name": "JWT Authentication | Authorisation",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "14654152"
+	},
+	"item": [
+		{
+			"name": "https://localhost:7273/auths/Register",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"password\": \"String@12345\",\r\n  \"email\": \"bertoneill@yahoo.com\",\r\n  \"firstName\": \"Bert\",\r\n  \"lastName\": \"O'Neill\",\r\n  \"userName\": \"bertoneill\",\r\n  \"confirmPassword\": \"String@12345\",\r\n  \"dateOfBirth\": \"1980-10-10\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/RegisterAsync",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"RegisterAsync"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/auths/LoginAsync",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"userName\": \"string3\",\r\n  \"password\": \"String@12345\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/LoginAsync",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"LoginAsync"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/auths/Verify2faAsync",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/Verify2faAsync?userName=bertoneill&code=033648",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"Verify2faAsync"
+					],
+					"query": [
+						{
+							"key": "userName",
+							"value": "bertoneill"
+						},
+						{
+							"key": "code",
+							"value": "033648"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/auths/RequestPasswordResetAsync",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/RequestPasswordResetAsync?userName=bertoneill",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"RequestPasswordResetAsync"
+					],
+					"query": [
+						{
+							"key": "userName",
+							"value": "bertoneill"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/auths/VerifyPasswordResetAsync",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"userName\": \"string3\",\r\n  \"password\": \"String@12345\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/VerifyPasswordResetAsync",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"VerifyPasswordResetAsync"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/UserLoggedIn",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"userName\": \"string3\",\r\n  \"password\": \"String@12345\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/userQaData",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"userQaData"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/getPicture",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/pictures/PictureAsync/1",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"pictures",
+						"PictureAsync",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/getPictureCORs",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/pictures/PictureAsync/1",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"pictures",
+						"PictureAsync",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/AdminLoggedIn",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"userName\": \"string3\",\r\n  \"password\": \"String@12345\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/AdminLoggedIn",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"AdminLoggedIn"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/auths/RefreshTokenAsync",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/RefreshTokenAsync",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"RefreshTokenAsync"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/auths/Verify2FactorAuthenticationAsync",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/Verify2FactorAuthenticationAsync?userName=UserRole&code=034073",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"Verify2FactorAuthenticationAsync"
+					],
+					"query": [
+						{
+							"key": "userName",
+							"value": "UserRole"
+						},
+						{
+							"key": "code",
+							"value": "034073"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/auths/LogoutAsync",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/LogoutAsync",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"LogoutAsync"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://localhost:7273/auths/Revoke",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:7273/auths/LogoutAsync",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "7273",
+					"path": [
+						"auths",
+						"LogoutAsync"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

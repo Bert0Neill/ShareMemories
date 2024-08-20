@@ -20,8 +20,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
     {
         public static void AddServicesInitialSetup(this IServiceCollection services, IConfiguration configuration)
         {
-            //// add mapper service (AutoMapper)
-            //services.AddAutoMapper(typeof(Program));
+            // add mapper service (AutoMapper)
+            services.AddAutoMapper(typeof(Program));
 
             // Register AutoMapper and the mapping profiles
             services.AddAutoMapper(typeof(LoginProfile));
