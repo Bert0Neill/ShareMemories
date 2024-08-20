@@ -546,8 +546,6 @@ namespace ShareMemories.Infrastructure.Services
             }
             else
             {
-                var signIn = await _signInManager.TwoFactorSignInAsync("Email", verificationCode, false, false);
-                //  var loginResult = await _signInManager.CanSignInAsync(identityUser!);
                 var result = await _signInManager.TwoFactorSignInAsync(TokenOptions.DefaultEmailProvider, verificationCode, false, false); // Replace "Email" with the actual provider name if different
 
                 if (result.Succeeded)

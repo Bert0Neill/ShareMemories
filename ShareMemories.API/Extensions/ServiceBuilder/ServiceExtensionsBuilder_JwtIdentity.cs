@@ -80,7 +80,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
 
                 // Confirm Email options
                 options.SignIn.RequireConfirmedEmail = false; // set to false if your is not to confirm their email address                
-                
+
                 // Lockout settings.
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(lockoutLifeSpanMinutes);
                 options.Lockout.MaxFailedAccessAttempts = lockoutAttempts;

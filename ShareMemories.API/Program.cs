@@ -23,8 +23,6 @@ try
     app.ConfigureMiddleware(app.Environment);
     app.ConfigureEndpoints();
 
-   
-
     app.Run();
 }
 catch (Exception exception)
