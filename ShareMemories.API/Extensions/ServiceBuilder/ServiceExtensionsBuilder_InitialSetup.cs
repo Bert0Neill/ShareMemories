@@ -20,8 +20,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
     {
         public static void AddServicesInitialSetup(this IServiceCollection services, IConfiguration configuration)
         {
-            // add mapper service (AutoMapper)
-            services.AddAutoMapper(typeof(Program));
+            //// add mapper service (AutoMapper)
+            //services.AddAutoMapper(typeof(Program));
 
             // Register AutoMapper and the mapping profiles
             services.AddAutoMapper(typeof(LoginProfile));
@@ -29,7 +29,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
             services.AddAutoMapper(typeof(LoginRegisterRefreshResponseProfile));
 
             // Register the IMemoryCache service for revoking invalidated JWT's
-            services.AddMemoryCache(); 
+            services.AddMemoryCache();
 
             // Add DTO model validation (from client)
             services.AddValidatorsFromAssemblyContaining(typeof(PictureValidator));

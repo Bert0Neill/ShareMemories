@@ -22,6 +22,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ShareMemories.Infrastructure.Services
 {
@@ -141,7 +142,7 @@ namespace ShareMemories.Infrastructure.Services
             {                
                 response.Message = $"Credentials are not valid";
                 return response;
-            }
+            }            
 
             // does the the user still need to confirmed their email (if applicable)
             if (_identityOptions.Value.SignIn.RequireConfirmedEmail && !await _userManager.IsEmailConfirmedAsync(identityUser))
@@ -155,7 +156,7 @@ namespace ShareMemories.Infrastructure.Services
 
             // try to sign the user in
             await _signInManager.SignOutAsync();
-            SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser!, user.Password, false, false);
+            SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser!, user.Password, false, true);
 
             if (loginResult.IsLockedOut || loginResult.IsNotAllowed)
             {
@@ -546,6 +547,13 @@ namespace ShareMemories.Infrastructure.Services
             }
             else
             {
+                // retrieve existing providers and check that Email is one of them (you may want to use SMS etc.)
+                var providers = await _userManager.GetValidTwoFactorProvidersAsync(identityUser);
+                if (!providers.Contains("Email"))
+                {
+                    response.Message = "Expected 2FA Provider doesn't exist!";
+                }
+
                 var result = await _signInManager.TwoFactorSignInAsync(TokenOptions.DefaultEmailProvider, verificationCode, false, false); // Replace "Email" with the actual provider name if different
 
                 if (result.Succeeded)
