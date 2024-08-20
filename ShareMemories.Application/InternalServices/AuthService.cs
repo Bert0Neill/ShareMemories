@@ -83,7 +83,7 @@ namespace ShareMemories.Infrastructure.Services
                 LastUpdated = DateTimeOffset.UtcNow.UtcDateTime,
                 EmailConfirmed = !_identityOptions.Value.SignIn.RequireConfirmedEmail,
                 //TwoFactorEnabled = bool.Parse(_config.GetSection("SystemDefaults:Is2FAEnabled").Value!)                
-                TwoFactorEnabled = false
+                TwoFactorEnabled = true
             };
 
             if (await _roleManager.RoleExistsAsync(DEFAULT_ROLE)) // verify that the role exists
@@ -155,11 +155,11 @@ namespace ShareMemories.Infrastructure.Services
 
             // try to sign the user in
             await _signInManager.SignOutAsync();
-            SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser!, user.Password, false, true);
+            SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser!, user.Password, false, false);
 
             if (loginResult.IsLockedOut || loginResult.IsNotAllowed)
             {
-                response.Message = "Account currently locked out (wait 10 minutes) or you are not allowed to sign-in.";
+                response.Message = $"Account is either locked (wait {_identityOptions.Value.Lockout.DefaultLockoutTimeSpan} minutes) or you are not allowed to sign-in - contact Administration.";
             }
             else if (loginResult.RequiresTwoFactor) // valid user at this stage - determine if 2FA is enabled and halt login- send 2fa email
             {
@@ -546,8 +546,9 @@ namespace ShareMemories.Infrastructure.Services
             }
             else
             {
+                var signIn = await _signInManager.TwoFactorSignInAsync("Email", verificationCode, false, false);
+                //  var loginResult = await _signInManager.CanSignInAsync(identityUser!);
                 var result = await _signInManager.TwoFactorSignInAsync(TokenOptions.DefaultEmailProvider, verificationCode, false, false); // Replace "Email" with the actual provider name if different
-                //var result = await _signInManager.TwoFactorSignInAsync("Email", verificationCode, isPersistent: false, rememberClient: false);
 
                 if (result.Succeeded)
                 {
@@ -718,7 +719,8 @@ namespace ShareMemories.Infrastructure.Services
         }
         private async Task SendTwoFactorAuthenticationAsync(ExtendIdentityUser identityUser)
         {
-            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider);
+            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, "Email");
+            //var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider);
             //var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, "Email");
 
             await SendEmailTaskAsync(identityUser, verificationCode, EmailType.TwoFactorAuthenticationLogin);

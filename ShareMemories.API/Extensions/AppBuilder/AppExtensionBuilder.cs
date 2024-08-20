@@ -18,9 +18,9 @@ namespace ShareMemories.API.Extensions.AppBuilder
             // add middleware to verify JWT hasn't been revoked
             app.UseMiddleware<TokenRevocationMiddleware>();
 
-            // apply security middleware
-            app.UseAuthentication(); // Authenticate the token
-            app.UseAuthorization();  // Authorize based on roles/policies
+            //// apply security middleware
+            //app.UseAuthentication(); // Authenticate the token
+            //app.UseAuthorization();  // Authorize based on roles/policies
 
             // add API Output Caching
             app.UseOutputCache();
@@ -34,7 +34,14 @@ namespace ShareMemories.API.Extensions.AppBuilder
 
             app.UseHttpsRedirection();
 
+            // apply security middleware
+            app.UseAuthentication(); // Authenticate the token
+            app.UseAuthorization();  // Authorize based on roles/policies
+
+
             app.UseCors("AllowSpecificOrigins"); // apply our custom CORS policy
+
+
         }
 
         public static void ConfigureEndpoints(this WebApplication app)

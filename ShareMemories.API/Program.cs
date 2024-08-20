@@ -16,12 +16,14 @@ try
 
     var app = builder.Build();
 
+    // Register logging middleware - automatically log all method (you still make individual logs, like error handling - a separate log is created for your logs)
+    app.UseMiddleware<MethodLoggingMiddleware>();
+
     // use extension methods to configure application middleware and custom endpoints
     app.ConfigureMiddleware(app.Environment);
     app.ConfigureEndpoints();
 
-    // Register logging middleware - automatically log all method (you still make individual logs, like error handling - a separate log is created for your logs)
-    app.UseMiddleware<MethodLoggingMiddleware>(); 
+   
 
     app.Run();
 }

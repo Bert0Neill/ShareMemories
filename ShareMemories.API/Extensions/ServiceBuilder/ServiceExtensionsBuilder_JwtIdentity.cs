@@ -71,7 +71,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
             // Register Identity services
             services.AddIdentity<ExtendIdentityUser, IdentityRole>(options =>
             {
-                // For example: P@ssw0rd
+                // Enforce password rules - For example: P@ssw0rd
                 options.Password.RequiredLength = 8;
                 options.Password.RequireNonAlphanumeric = true; // For example: !"£$%^
                 options.Password.RequireDigit = true;
@@ -99,7 +99,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
             .AddApiEndpoints()
             .AddDefaultTokenProviders();
 
-            // configure the timeout for a Confirmation email (token), before it expires. Used as part of Registration process.
+            // configure the timeout for a token (Confirmation email , 2FA etc.), before it expires. Defaults to 1 day. Used as part of Registration process.
             services.Configure<DataProtectionTokenProviderOptions>(options =>
             {
                 options.TokenLifespan = TimeSpan.FromMinutes(tokenLifeSpanMinutes); // Set the email token lifespan (2FA or Confirm Email in registration)
