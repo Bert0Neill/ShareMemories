@@ -17,7 +17,6 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
             int lockoutLifeSpanMinutes = int.Parse(configuration.GetSection("SystemDefaults:LockoutLifeSpan").Value);
             int lockoutAttempts = int.Parse(configuration.GetSection("SystemDefaults:LockoutAttempts").Value);
             
-
             // Add Bearer JWT Authentication
             services.AddAuthentication(options =>
             {
@@ -80,11 +79,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.Password.RequireUppercase = true;
 
                 // Confirm Email options
-                options.SignIn.RequireConfirmedEmail = true;
-                options.User.RequireUniqueEmail = true;
-                options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;  // use email for email registration
-                options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;      // use email for password reset
-
+                options.SignIn.RequireConfirmedEmail = false; // set to false if your is not to confirm their email address                
+                
                 // Lockout settings.
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(lockoutLifeSpanMinutes);
                 options.Lockout.MaxFailedAccessAttempts = lockoutAttempts;
@@ -92,8 +88,12 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
 
                 // User settings.
                 options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-                options.User.RequireUniqueEmail = false;
+                options.User.RequireUniqueEmail = true;
 
+                // confirm Token settings
+                options.Tokens.AuthenticatorTokenProvider = TokenOptions.DefaultEmailProvider;      // provider for  2FA                
+                options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;  // provider for email confirmation
+                options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;      // provider for password reset
             })
             .AddEntityFrameworkStores<ShareMemoriesContext>()
             .AddApiEndpoints()
@@ -113,6 +113,8 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.AddPolicy("QAPolicy", policy => policy.RequireRole("Qa"));
                 options.AddPolicy("UserOrQaPolicy", policy => policy.RequireRole("User", "Qa"));
             });
+
+           
 
             services.AddAuthorization();
         }

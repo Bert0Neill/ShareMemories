@@ -1,18 +1,22 @@
 ﻿using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.Resources;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Domain.Enums;
+using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
+using System;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
@@ -26,6 +30,8 @@ namespace ShareMemories.Infrastructure.Services
         // class variables
         private readonly UserManager<ExtendIdentityUser> _userManager;
         private readonly SignInManager<ExtendIdentityUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IOptions<IdentityOptions> _identityOptions;
         private readonly IConfiguration _config;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -33,12 +39,14 @@ namespace ShareMemories.Infrastructure.Services
         private readonly IMemoryCache _memoryCache;
         private readonly ILogger<AuthService> _logger;
         private bool _isRefreshing = false;
-        public AuthService(ILogger<AuthService> logger, IMemoryCache memoryCache, UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService, SignInManager<ExtendIdentityUser> signInManager, IHttpContextAccessor httpContextAccessor, IEmailSender emailSender)
+        public AuthService(ILogger<AuthService> logger, IMemoryCache memoryCache, IOptions<IdentityOptions> identityOptions, RoleManager<IdentityRole> roleManager, UserManager<ExtendIdentityUser> userManager, IConfiguration config, IJwtTokenService jwtTokenService, SignInManager<ExtendIdentityUser> signInManager, IHttpContextAccessor httpContextAccessor, IEmailSender emailSender)
         {
             _userManager = userManager;
             _config = config;
             _jwtTokenService = jwtTokenService;
             _signInManager = signInManager;
+            _roleManager = roleManager;
+            _identityOptions = identityOptions;
             _httpContextAccessor = httpContextAccessor;
             _emailSender = emailSender;
             _memoryCache = memoryCache;
@@ -50,17 +58,18 @@ namespace ShareMemories.Infrastructure.Services
         /**************************************************************************************************
         *           Register, Login, Logout, Verify Confirm Email & Request Confirm Email                 *
         ***************************************************************************************************/
-        public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user)
+        public async Task<LoginRegisterRefreshResponseModel> RegisterUserAsync(RegisterUserModel user)
         {
             Guard.Against.Null(user, null, "User credentials are not valid");
 
-            LoginRegisterRefreshResponseDto registerResponseDto = new();
+            const string DEFAULT_ROLE = "User";
+            LoginRegisterRefreshResponseModel registerResponseModel = new() { Message = $"Username: {user.UserName} registered successfully. You can now login" };
 
             // verify that Username and\or email have not already been registered
             if (await IsUsernameOrEmailTakenAsync(user.UserName, user.Email))
             {
-                registerResponseDto.Message = $"Username {user.UserName} or Email {user.Email}, already exists within the system";
-                return registerResponseDto;
+                registerResponseModel.Message = $"Username {user.UserName} or Email {user.Email}, already exists within the system";
+                return registerResponseModel;
             }
 
             // add these details to a new AspNetUser table instance
@@ -72,40 +81,53 @@ namespace ShareMemories.Infrastructure.Services
                 LastName = user.LastName,
                 DateOfBirth = user.DateOfBirth,
                 LastUpdated = DateTimeOffset.UtcNow.UtcDateTime,
-                EmailConfirmed = bool.Parse(_config.GetSection("SystemDefaults:IsEmailConfirmationRequired").Value!),
-                TwoFactorEnabled = bool.Parse(_config.GetSection("SystemDefaults:Is2FAEnabled").Value!)                
+                EmailConfirmed = !_identityOptions.Value.SignIn.RequireConfirmedEmail,
+                //TwoFactorEnabled = bool.Parse(_config.GetSection("SystemDefaults:Is2FAEnabled").Value!)                
+                TwoFactorEnabled = false
             };
 
-            var result = await _userManager.CreateAsync(identityUser, user.Password);
-
-            if (result.Errors.Any())
+            if (await _roleManager.RoleExistsAsync(DEFAULT_ROLE)) // verify that the role exists
             {
-                var errors = new StringBuilder();
-                result.Errors.ToList().ForEach(err => errors.AppendLine($"{err.Description}")); // build up a string of faults
-                registerResponseDto.Message = errors.ToString();
+                var result = await _userManager.CreateAsync(identityUser, user.Password);
+
+                if (result.Errors.Any())
+                {
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"{err.Description}")); // build up a string of faults
+                    registerResponseModel.Message = errors.ToString();
+                }
+                else // success - assign default role
+                {
+                    // assign a default role (USER) to the user
+                    var roleAssignResult = await _userManager.AddToRoleAsync(identityUser, "User"); // Replace "User" with the desired role
+
+                    if (roleAssignResult.Errors.Any())
+                    {
+                        var roleErrors = new StringBuilder();
+                        roleAssignResult.Errors.ToList().ForEach(err => roleErrors.AppendLine($"{err.Description}"));
+                        registerResponseModel.Message = $"Username: {user.UserName} registered, but there was an issue assigning roles: {roleErrors}";
+                    }
+                    else // success registering user & role
+                    {
+                        // does the user need to confirm their email (OTP)
+                        if (_identityOptions.Value.SignIn.RequireConfirmedEmail)
+                        {                            
+                            string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser); // generate token to be used in URL
+                            await SendEmailTaskAsync(identityUser, verificationCode, EmailType.ConfirmationEmail);
+                            registerResponseModel.Message = $"Username: {user.UserName} registered successfully. A confirmation email has been sent to {identityUser.Email}, you will need to click the link within the email to complete the registration process. Check your Spam folder if it isn't in your Inbox.";
+                        }        
+                        
+                        registerResponseModel.IsStatus = true; // doubling up the IsLoggedIn property to indicate if user was successfully registered or not
+                    }
+                }
             }
-            else // success - assign default role
+            else
             {
-                // assign a default role (USER) to the user
-                var roleAssignResult = await _userManager.AddToRoleAsync(identityUser, "User"); // Replace "User" with the desired role
-
-                if (roleAssignResult.Errors.Any())
-                {
-                    var roleErrors = new StringBuilder();
-                    roleAssignResult.Errors.ToList().ForEach(err => roleErrors.AppendLine($"{err.Description}"));
-                    registerResponseDto.Message = $"Username: {user.UserName} registered, but there was an issue assigning roles: {roleErrors}";
-                }
-                else // success registering user & role
-                {
-                    string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser); // generate token to be used in URL
-                    await SendEmailTaskAsync(identityUser, verificationCode, EmailType.ConfirmationEmail);
-
-                    registerResponseDto.Message = $"Username: {user.UserName} registered successfully. A confirmation email has been sent to {identityUser.Email}, you will need to click the link within the email to complete the registration. Check your Spam folder if it isn't in your Inbox.";
-                    registerResponseDto.IsStatus = true; // doubling up the IsLoggedIn property to indicate if user was successfully registered or not
-                }
+                // notify user that the role doesn't exist
+                registerResponseModel.Message = $"Role: {DEFAULT_ROLE} - doesn't exist.";
             }
 
-            return registerResponseDto;
+            return registerResponseModel;
         }
 
         public async Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user)
@@ -121,10 +143,18 @@ namespace ShareMemories.Infrastructure.Services
                 return response;
             }
 
+            // does the the user still need to confirmed their email (if applicable)
+            if (_identityOptions.Value.SignIn.RequireConfirmedEmail && !await _userManager.IsEmailConfirmedAsync(identityUser))
+            {
+                response.Message = $"User has not yet confirmed their email address. Check your Spam folder";
+                return response;                
+            }
+
             await ValidateUserIdentityAsync(user, identityUser); // checks to verify a valid user - a BadRequest is thrown otherwise            
             IList<string> roles = await VerifyUserRolesAsync(identityUser); // retrieve their roles (at least 1 must exist)
 
             // try to sign the user in
+            await _signInManager.SignOutAsync();
             SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser!, user.Password, false, true);
 
             if (loginResult.IsLockedOut || loginResult.IsNotAllowed)
@@ -215,7 +245,10 @@ namespace ShareMemories.Infrastructure.Services
             {
                 var result = await _userManager.ConfirmEmailAsync(identityUser, token);
 
-                if (result.Succeeded) response.IsStatus = true;
+                if (result.Succeeded)
+                {
+                    response.IsStatus = true;
+                }
                 else
                 {
                     var errors = new StringBuilder();
@@ -513,7 +546,8 @@ namespace ShareMemories.Infrastructure.Services
             }
             else
             {
-                var result = await _signInManager.TwoFactorSignInAsync(_config.GetSection("SystemDefaults:DefaultProvider").Value!, verificationCode, false, false);
+                var result = await _signInManager.TwoFactorSignInAsync(TokenOptions.DefaultEmailProvider, verificationCode, false, false); // Replace "Email" with the actual provider name if different
+                //var result = await _signInManager.TwoFactorSignInAsync("Email", verificationCode, isPersistent: false, rememberClient: false);
 
                 if (result.Succeeded)
                 {
@@ -572,7 +606,7 @@ namespace ShareMemories.Infrastructure.Services
             if (identityUser == null) response.Message = "An invalid email or the email is not register to your account";
             else
             {
-                var unlockToken = await _userManager.GenerateUserTokenAsync(identityUser, TokenOptions.DefaultProvider, _config.GetSection("SystemDefaults:DefaultProvider").Value!);
+                var unlockToken = await _userManager.GenerateUserTokenAsync(identityUser, TokenOptions.DefaultProvider, TokenOptions.DefaultEmailProvider);
                 await SendEmailTaskAsync(identityUser, unlockToken, EmailType.UnlocKAccountRequested);
                 response.IsStatus = true; // double up for validating password sent successfully
             }
@@ -595,7 +629,7 @@ namespace ShareMemories.Infrastructure.Services
                 // Verify the token
                 var isTokenValid = await _userManager.VerifyUserTokenAsync(identityUser,
                                                                            TokenOptions.DefaultProvider,
-                                                                           _config.GetSection("SystemDefaults:DefaultProvider").Value!,
+                                                                           TokenOptions.DefaultEmailProvider,
                                                                            token);
                 if (!isTokenValid)
                 {
@@ -684,7 +718,9 @@ namespace ShareMemories.Infrastructure.Services
         }
         private async Task SendTwoFactorAuthenticationAsync(ExtendIdentityUser identityUser)
         {
-            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, _config.GetSection("SystemDefaults:DefaultProvider").Value!);            
+            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider);
+            //var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, "Email");
+
             await SendEmailTaskAsync(identityUser, verificationCode, EmailType.TwoFactorAuthenticationLogin);
         }
         private void CacheRevokedToken(string jwtToken, LoginRegisterRefreshResponseDto response, ClaimsPrincipal principal)
@@ -720,19 +756,19 @@ namespace ShareMemories.Infrastructure.Services
 
             if (emailType == EmailType.ConfirmationEmail)
             {
-                actionLink = $"{domain}/{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+                actionLink = $"{domain}{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
                 subject = "Confirmation Email";
                 message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, actionLink);
             }
             else if (emailType == EmailType.PasswordReset)
             {
-                actionLink = $"{domain}/{_config["EnvironmentResetPasswordApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+                actionLink = $"{domain}{_config["EnvironmentResetPasswordApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
                 subject = "Password Reset Request";
                 message = string.Format(ApplicationText.ResetPasswordTemplate, identityUser.FirstName, actionLink);                
             }
             else if (emailType == EmailType.TwoFactorAuthenticationLogin)
             {
-                actionLink = $"{domain}/{_config["Environment2faApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
+                actionLink = $"{domain}{_config["Environment2faApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
                 subject = "2 Factor Authentication - Login";
                 message = string.Format(ApplicationText.TwoFactorAuthenticationTemplate, identityUser.FirstName, actionLink); 
             }
@@ -748,7 +784,7 @@ namespace ShareMemories.Infrastructure.Services
             }
             else if (emailType == EmailType.UnlocKAccountRequested)
             {
-                actionLink = $"{domain}/{_config["EnvironmentUnlockVerifyApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
+                actionLink = $"{domain}{_config["EnvironmentUnlockVerifyApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
                 subject = "2 Factor Authentication - Disabled";
                 message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, actionLink);
             }
@@ -759,9 +795,6 @@ namespace ShareMemories.Infrastructure.Services
         {
             // verify user exists - a BadRequest will be thrown in Global Error Handler (middleware)
             Guard.Against.Null(identityUser, null, "User credentials not valid");
-
-            // verify user confirmed email address - a BadRequest will be thrown in Global Error Handler (middleware)
-            Guard.Against.Null(await _userManager.IsEmailConfirmedAsync(identityUser) ? (bool?)true : null, null, "User has not yet confirmed their email address. Check your Spam folder.");
 
             // verify user's password matches that in the Identity table - a BadRequest will be thrown in Global Error Handler (middleware)
             Guard.Against.Null(await _userManager.CheckPasswordAsync(identityUser, user.Password) ? (bool?)true : null, null, "Invalid credentials entered, please try again.");

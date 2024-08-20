@@ -1,4 +1,5 @@
 ﻿using Ardalis.GuardClauses;
+using AutoMapper;
 using Mailosaur.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
 using ShareMemories.Domain.DTOs;
+using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
 
@@ -24,12 +26,19 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              * Register a new user (adding FluentValidator to ensure data integrity from client)
              *******************************************************************************************************/
-            group.MapPost("/RegisterAsync", async Task<Results<Ok<string>, BadRequest<string>>> (RegisterUserDto user, IAuthService authService) =>
+            group.MapPost("/RegisterAsync", async Task<Results<Ok<string>, BadRequest<string>>> (IMapper mapper, RegisterUserDto registerDto, IAuthService authService) =>
             {
-                var result = await authService.RegisterUserAsync(user);
+                // convert DTO to Model
+                var registerUserModel = mapper.Map<RegisterUserModel>(registerDto);
 
-                if (result.IsStatus) return TypedResults.Ok(result.Message);
-                else return TypedResults.BadRequest(result.Message);
+                // this gets back model and then converts into DTO
+                var loginRegisterRefreshResponseModel = await authService.RegisterUserAsync(registerUserModel);
+
+                // convert model to DTO
+                var loginRegisterRefreshResponseDto = mapper.Map<LoginRegisterRefreshResponseDto>(loginRegisterRefreshResponseModel);
+
+                if (loginRegisterRefreshResponseDto.IsStatus) return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.BadRequest(loginRegisterRefreshResponseDto.Message);
 
             }).WithName("RegisterAsync")
               .WithOpenApi(x => new OpenApiOperation(x)
@@ -46,20 +55,22 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              * Login an already registered user
              *******************************************************************************************************/
-            group.MapPost("/LoginAsync", async (LoginUserDto user, IAuthService authService, HttpContext context) =>
+            group.MapPost("/LoginAsync", async (IMapper mapper, LoginUserDto loginDto, IAuthService authService, HttpContext context) =>
             {
-                var loginResult = await authService.LoginAsync(user);
+                // var loginUserModel = mapper.Map<LoginUserModel>(loginDto);
 
-                if (loginResult.IsStatus)
+                var loginRegisterRefreshResponseDto = await authService.LoginAsync(loginDto);
+
+                if (loginRegisterRefreshResponseDto.IsStatus)
                 {
 #if DEBUG
-                    return Results.Ok(loginResult); // testing with JWT Token in Swagger - development ONLY!!!
+                    return Results.Ok(loginRegisterRefreshResponseDto); // testing with JWT Token in Swagger - development ONLY!!!
 #else
                     return Results.Ok(new { message = "Logged in successfully" });
 #endif
                 }
 
-                return Results.BadRequest(loginResult.Message);
+                return Results.BadRequest(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("LoginAsync")
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -78,13 +89,13 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 VerifyRequestCookiesExist(context);
 
-                var loginResult = await authService.RefreshTokenAsync(context.Request.Cookies["jwtToken"]!, context.Request.Cookies["jwtRefreshToken"]!);
+                var loginRegisterRefreshResponseDto = await authService.RefreshTokenAsync(context.Request.Cookies["jwtToken"]!, context.Request.Cookies["jwtRefreshToken"]!);
 
-                if (loginResult.IsStatus)
+                if (loginRegisterRefreshResponseDto.IsStatus)
                 {
 
 #if DEBUG
-                    return Results.Ok(loginResult); // testing with JWT Token in Swagger - development ONLY!!!
+                    return Results.Ok(loginRegisterRefreshResponseDto); // testing with JWT Token in Swagger - development ONLY!!!
 #else
                     return Results.Ok("Successfully refreshed JWT Bearer");
 #endif                    
@@ -109,10 +120,10 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 VerifyRequestCookiesExist(context);
 
-                var response = await authService.LogoutAsync(context.Request.Cookies["jwtToken"]!);
+                var loginRegisterRefreshResponseDto = await authService.LogoutAsync(context.Request.Cookies["jwtToken"]!);
 
-                if (!response.IsStatus) return TypedResults.Ok(response.Message);
-                else return TypedResults.NotFound(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
 
             })
             .WithName("Logout")
@@ -132,11 +143,11 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 VerifyRequestCookiesExist(context); // before revoking, make sure they exist
 
-                var response = await authService.RevokeTokenLogoutAsync(context.Request.Cookies["jwtToken"]!);
+                var loginRegisterRefreshResponseDto = await authService.RevokeTokenLogoutAsync(context.Request.Cookies["jwtToken"]!);
 
                 // was the Refresh Token revoked successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("Revoke")
             .RequireAuthorization()
@@ -156,11 +167,11 @@ namespace ShareMemories.API.Endpoints.Auth
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(token, "Confirm token is missing");
 
-                var response = await authService.VerifyEmailConfirmationAsync(userName, token);
+                var loginRegisterRefreshResponseDto = await authService.VerifyEmailConfirmationAsync(userName, token);
 
                 // was the email confirmation successful
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("ConfirmEmail")
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -179,11 +190,11 @@ namespace ShareMemories.API.Endpoints.Auth
                 Guard.Against.Empty(password, "Password is missing");
                 Guard.Against.Empty(token, "Password reset token is missing");
 
-                var response = await authService.VerifyPasswordResetAsync(userName, token, password);
+                var loginRegisterRefreshResponseDto = await authService.VerifyPasswordResetAsync(userName, token, password);
 
                 // was the email confirmation successful
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("VerifyPasswordReset")
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -200,11 +211,11 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.RequestPasswordResetAsync(userName);
+                var loginRegisterRefreshResponseDto = await authService.RequestPasswordResetAsync(userName);
 
                 // was the password reset email sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("RequestPasswordReset")
             .RequireAuthorization()
@@ -224,11 +235,11 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.RequestConfirmationEmailAsync(userName);
+                var loginRegisterRefreshResponseDto = await authService.RequestConfirmationEmailAsync(userName);
 
                 // was the email confirmation sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("ResendConfirmationEmail")
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -242,18 +253,19 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              *   Verify user's 2FA (API not secure as user must be able to use it as part of logged in process)    *
              *******************************************************************************************************/
-            group.MapPost("/Verify2faAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string code, IAuthService authService) =>
+            //group.MapPost("/Verify2faAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string code) =>
+            group.MapGet("/Verify2FactorAuthenticationAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string code) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(code, "Code is missing");
 
-                var response = await authService.Verify2FactorAuthenticationAsync(userName, code);
+                var loginRegisterRefreshResponseDto = await authService.Verify2FactorAuthenticationAsync(userName, code);
 
                 // was the email confirmation sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
-             .WithName("Verify2fa")
+             .WithName("Verify2FactorAuthentication")
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "Verify user login with 2FA",
@@ -264,15 +276,15 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
             *                           Enforce 2FA for a specific user (called by Admin)                          *
             *******************************************************************************************************/
-            group.MapPost("/Enable2faForUser", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            group.MapPost("/Enable2faForUserAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.Enable2FactorAuthenticationForUserAsync(userName);
+                var loginRegisterRefreshResponseDto = await authService.Enable2FactorAuthenticationForUserAsync(userName);
 
                 // was the email confirmation sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
 
             })
             .WithName("Enable2faForUser")
@@ -288,15 +300,15 @@ namespace ShareMemories.API.Endpoints.Auth
             /******************************************************************************************************
             *                         Revoke 2FA for a specific user (called by Admin)                            *
             *******************************************************************************************************/
-            group.MapPost("/Disable2faForUser", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            group.MapPost("/Disable2faForUserAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.Disable2FactorAuthenticationForUserAsync(userName);
+                var loginRegisterRefreshResponseDto = await authService.Disable2FactorAuthenticationForUserAsync(userName);
 
                 // was the email confirmation sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("Disable2faForUser")
             .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
@@ -315,11 +327,11 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.UnlockAccountVerifiedByAdminAsync(userName);
+                var loginRegisterRefreshResponseDto = await authService.UnlockAccountVerifiedByAdminAsync(userName);
 
                 // was the email confirmation sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("Unlock Account - Admin")
             .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
@@ -338,11 +350,11 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.LockAccountAsync(userName);
+                var loginRegisterRefreshResponseDto = await authService.LockAccountAsync(userName);
 
                 // was the email confirmation sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("Lock Account - Admin")
             .RequireAuthorization("AdminPolicy") // apply a security policy to API's and a default Bearer Scheme
@@ -361,11 +373,11 @@ namespace ShareMemories.API.Endpoints.Auth
             {
                 Guard.Against.Empty(userName, "Username is missing");
 
-                var response = await authService.RequestUnlockAsync(userName);
+                var loginRegisterRefreshResponseDto = await authService.RequestUnlockAsync(userName);
 
                 // was the email confirmation sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("Unlock Request")
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -384,11 +396,11 @@ namespace ShareMemories.API.Endpoints.Auth
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(token, "Token is missing");
 
-                var response = await authService.UnlockAccountVerifiedByEmailAsync(userName, token);
+                var loginRegisterRefreshResponseDto = await authService.UnlockAccountVerifiedByEmailAsync(userName, token);
 
                 // was the email confirmation sent successfully
-                if (!response.IsStatus) return TypedResults.NotFound(response.Message);
-                else return TypedResults.Ok(response.Message);
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
             .WithName("Unlock Request Verified By Email")
             .WithOpenApi(x => new OpenApiOperation(x)
@@ -397,10 +409,6 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Admin can unlock a user's account",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
-
-
-
-
         }
 
         private static void VerifyRequestCookiesExist(HttpContext context)

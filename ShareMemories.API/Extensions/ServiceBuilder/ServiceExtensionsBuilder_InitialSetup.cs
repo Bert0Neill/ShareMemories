@@ -4,6 +4,7 @@ using Mailosaur.Operations;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using ShareMemories.API.Mappers;
 using ShareMemories.API.Validators;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.InternalServices;
@@ -19,6 +20,14 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
     {
         public static void AddServicesInitialSetup(this IServiceCollection services, IConfiguration configuration)
         {
+            // add mapper service (AutoMapper)
+            services.AddAutoMapper(typeof(Program));
+
+            // Register AutoMapper and the mapping profiles
+            services.AddAutoMapper(typeof(LoginProfile));
+            services.AddAutoMapper(typeof(RegisterUserProfile));
+            services.AddAutoMapper(typeof(LoginRegisterRefreshResponseProfile));
+
             // Register the IMemoryCache service for revoking invalidated JWT's
             services.AddMemoryCache(); 
 

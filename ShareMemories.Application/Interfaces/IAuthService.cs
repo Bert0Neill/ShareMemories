@@ -3,6 +3,7 @@ using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Identity;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Enums;
+using ShareMemories.Domain.Models;
 
 namespace ShareMemories.Infrastructure.Interfaces
 {
@@ -10,7 +11,7 @@ namespace ShareMemories.Infrastructure.Interfaces
     {
         Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user);
         Task<LoginRegisterRefreshResponseDto> RefreshTokenAsync(string jwtToken, string refreshToken);
-        Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserDto user);
+        Task<LoginRegisterRefreshResponseModel> RegisterUserAsync(RegisterUserModel user);
         Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken);
         Task<LoginRegisterRefreshResponseDto> RevokeTokenLogoutAsync(string jwtToken);
         Task<LoginRegisterRefreshResponseDto> VerifyEmailConfirmationAsync(string userName, string token);

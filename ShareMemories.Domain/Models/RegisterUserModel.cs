@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ShareMemories.Shared.DTOs
+namespace ShareMemories.Domain.Models
 {
-    public class RegisterUserDto() : LoginUserDto
+    public class RegisterUserModel() : LoginUserModel
     {
         [Required]
         public string FirstName { get; set; } = string.Empty;
