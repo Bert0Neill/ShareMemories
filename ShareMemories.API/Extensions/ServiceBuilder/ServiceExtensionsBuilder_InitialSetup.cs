@@ -48,8 +48,10 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
 
             // Dependency Injection
             services.AddScoped<IPictureService, PictureService>();          // Application
+            services.AddScoped<IVideoService, VideoService>();              // Application
             services.AddScoped<IAuthService, AuthService>();                // Application
             services.AddScoped<IPictureRepository, PictureRepository>();    // Infrastructure
+            services.AddScoped<IVideoRepository, VideoRepository>();        // Infrastructure
             services.AddScoped<IJwtTokenService, JwtTokenService>();        // Infrastructure
             services.AddTransient<IEmailSender, EmailService>();            // Infrastructure
 

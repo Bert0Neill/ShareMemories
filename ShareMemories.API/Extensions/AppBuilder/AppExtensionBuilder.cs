@@ -43,7 +43,13 @@ namespace ShareMemories.API.Extensions.AppBuilder
             // Register Minimal API Endpoints
             app.MapPictureEndpoints();
             app.MapVideoEndpoints();
-            app.MapAuthEndpoints();
+            //app.MapAuthEndpoints();
+            app.MapAdminEndpoints();
+            app.MapLockoutEndpoints();
+            app.MapLoginRegisterEndpoints();
+            app.MapPasswordEndpoints();
+            app.MapTokenEndpoints();
+            app.MapTwoFAEndpoints();
         }
     }
 }

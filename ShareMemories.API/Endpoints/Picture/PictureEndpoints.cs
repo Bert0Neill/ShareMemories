@@ -36,7 +36,7 @@ namespace ShareMemories.API.Endpoints.Picture
               .WithName("GetPictureById")
               .WithOpenApi(x => new OpenApiOperation(x)
               {
-                  Summary = "Get Picture By Id",
+                  Summary = "Retrieve a picture by the picture Id",
                   Description = "Returns information about a selected picture from the user's library.",
                   Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
               })
@@ -45,7 +45,7 @@ namespace ShareMemories.API.Endpoints.Picture
               // invalidate data when new record added, by using tag in Post API    
             
 
-            group.MapPost("/InsertPictureAsync", async (HttpContext context, ShareMemories.Domain.Entities.Picture picture, IPictureService pictureService) =>
+            group.MapPut("/InsertPictureAsync", async (HttpContext context, ShareMemories.Domain.Entities.Picture picture, IPictureService pictureService) =>
             {
                 // DTO validated before this line, using "PictureValidator"
                 var insertedPicture = await pictureService.InsertPictureAsync(picture);
@@ -59,7 +59,7 @@ namespace ShareMemories.API.Endpoints.Picture
            .WithName("InsertPictureAsync")
            .WithOpenApi(x => new OpenApiOperation(x)
            {
-               Summary = "Insert",
+               Summary = "Insert a new picture",
                Description = "Adds a new picture to database",
                Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
            })
@@ -74,22 +74,10 @@ namespace ShareMemories.API.Endpoints.Picture
             .WithName("RetrieveAllUserPicturesByUserId")
              .WithOpenApi(x => new OpenApiOperation(x)
              {
-                 Summary = "Get All Pictures By User Id",
+                 Summary = "Retrieve all pictures by user Id",
                  Description = "Returns information about a selected picture from the user's library.",
                  Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
-             });
-
-            group.MapPost("/SharePictureById", () =>
-            {
-                return "SharePictureByIdData...";
-            })
-            .WithName("SharePictureById")
-             .WithOpenApi(x => new OpenApiOperation(x)
-             {
-                 Summary = "Get Picture By Id",
-                 Description = "Returns information about a selected picture from the user's library.",
-                 Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
-             });
+             });           
         }
     }
 }

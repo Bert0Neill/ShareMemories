@@ -20,5 +20,6 @@ public partial class Video
     public bool? IsWatched { get; set; }
 
     public bool? IsArchived { get; set; }
+    public byte[] VideoBytes { get; set; }
 
 }
