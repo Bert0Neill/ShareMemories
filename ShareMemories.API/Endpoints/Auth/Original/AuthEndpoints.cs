@@ -14,7 +14,7 @@ using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
 using ShareMemories.Infrastructure.Services;
 
-namespace ShareMemories.API.Endpoints.Auth
+namespace ShareMemories.API.Endpoints.Auth.Original
 {
     public static class AuthEndpoints
     {
@@ -320,9 +320,9 @@ namespace ShareMemories.API.Endpoints.Auth
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
 
-           /******************************************************************************************************
-           *                             Unlock a user's account (called by Admin)                               *
-           *******************************************************************************************************/
+            /******************************************************************************************************
+            *                             Unlock a user's account (called by Admin)                               *
+            *******************************************************************************************************/
             group.MapPost("/UnlockAccountAsync/{userName}", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
