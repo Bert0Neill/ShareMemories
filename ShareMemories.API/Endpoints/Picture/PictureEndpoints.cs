@@ -45,7 +45,7 @@ namespace ShareMemories.API.Endpoints.Picture
               // invalidate data when new record added, by using tag in Post API    
             
 
-            group.MapPut("/InsertPictureAsync", async (HttpContext context, ShareMemories.Domain.Entities.Picture picture, IPictureService pictureService) =>
+            group.MapPost("/InsertPictureAsync", async (HttpContext context, ShareMemories.Domain.Entities.Picture picture, IPictureService pictureService) =>
             {
                 // DTO validated before this line, using "PictureValidator"
                 var insertedPicture = await pictureService.InsertPictureAsync(picture);
@@ -66,10 +66,11 @@ namespace ShareMemories.API.Endpoints.Picture
            .CacheOutput(x => x.Tag("PictureById"))
            .AddEndpointFilter<GenericValidationFilter<PictureValidator, ShareMemories.Domain.Entities.Picture>>(); // apply fluent validation to DTO model from client and pass back broken rules    
 
-
-            group.MapGet("/GetAllUserPicturesByUserId", () =>
+            group.MapGet("/GetAllUserPicturesByUserId", [OutputCache(PolicyName = "Expire30")] Results<Ok<List<ShareMemories.Domain.Entities.Picture>>, NotFound> (IPictureService pictureService, int id) =>
             {
-                return "AllUserPicturesByUserId Data...";
+                return pictureService.GetPictures() is { } picture // pattern matching expression. Checking if bookService.GetBook(id) matches the pattern { } and assigns it to a variable named book.
+                       ? TypedResults.Ok(picture) // return Book if non-null value
+                       : TypedResults.NotFound(); // if Null, return NotFound                
             })
             .WithName("RetrieveAllUserPicturesByUserId")
              .WithOpenApi(x => new OpenApiOperation(x)
@@ -77,7 +78,19 @@ namespace ShareMemories.API.Endpoints.Picture
                  Summary = "Retrieve all pictures by user Id",
                  Description = "Returns information about a selected picture from the user's library.",
                  Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
-             });           
+             });
+
+            group.MapPut("/UpdatePictureAsync", async (HttpContext context, ShareMemories.Domain.Entities.Picture picture, IPictureService pictureService) =>
+            {
+                return "Picture updated...";
+            })
+           .WithName("UpdatePictureAsync")
+           .WithOpenApi(x => new OpenApiOperation(x)
+           {
+               Summary = "Update picture",
+               Description = "Updated information about a selected picture.",
+               Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
+           });
         }
     }
 }

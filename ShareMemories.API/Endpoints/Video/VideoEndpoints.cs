@@ -26,7 +26,7 @@ namespace ShareMemories.API.Endpoints.Video
                 Tags = new List<OpenApiTag> { new() { Name = "Video API Library" } }
             });
 
-            group.MapPut("/InsertVideoAsync", async (HttpContext context, ShareMemories.Domain.Entities.Video video, IVideoService videoService) =>
+            group.MapPost("/InsertVideoAsync", async (HttpContext context, ShareMemories.Domain.Entities.Video video, IVideoService videoService) =>
             {
                 // DTO validated before this line, using "VideoValidator"
                 var insertedVideo = await videoService.InsertVideoAsync(video);
@@ -57,6 +57,18 @@ namespace ShareMemories.API.Endpoints.Video
                 Description = "Returns information about a selected video from the user's library.",
                 Tags = new List<OpenApiTag> { new() { Name = "Video API Library" } }
             });
+
+            group.MapPut("/UpdateVideoAsync", async (HttpContext context, ShareMemories.Domain.Entities.Video video, IVideoService pictureService) =>
+            {
+                return "Video updated...";
+            })
+        .WithName("UpdateVideoAsync")
+         .WithOpenApi(x => new OpenApiOperation(x)
+         {
+             Summary = "Update video",
+             Description = "Updated information about a selected video.",
+             Tags = new List<OpenApiTag> { new() { Name = "Video API Library" } }
+         });
         }
     }
 }

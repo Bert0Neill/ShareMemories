@@ -44,7 +44,7 @@ namespace ShareMemories.Application.InternalServices
         //}
 
         public List<Picture> GetPictures()
-        {
+        {            
             return this._pictures;
         }
 
