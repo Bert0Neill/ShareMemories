@@ -120,14 +120,17 @@
   <data name="ConfirmEmailTemplate" xml:space="preserve">
     <value>Hello {0}
 
-     Thank you for registering. Please confirm your email by clicking the link below:
+Thank you for registering. 
+
+Please confirm your email address by clicking the Swagger API link "/loginGroup/ConfirmRegisteredEmailAsync" and enter your Usrname and the token below:
+NB: Normally you will have a link here to bring you to the verification page to enter the Username &amp; Token.
      
-     Confirm email link: {1}
+Token: {1}
 
-     If you did not register for this site, please ignore this email.
+If you did not register for this site, please ignore this email.
 
-     Thanking you
-     O'Neill Says!</value>
+Thanking you
+O'Neill Says!</value>
   </data>
   <data name="DisableTwoFactorAuthenticationTemplate" xml:space="preserve">
     <value>Hello {0}

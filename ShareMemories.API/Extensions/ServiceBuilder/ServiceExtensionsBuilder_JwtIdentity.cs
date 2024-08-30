@@ -79,7 +79,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.Password.RequireUppercase = true;
 
                 // Confirm Email options
-                options.SignIn.RequireConfirmedEmail = false; // set to false if your is not to confirm their email address                
+                options.SignIn.RequireConfirmedEmail = true; // set to false if user is not to confirm their email address when registering
 
                 // Lockout settings.
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(lockoutLifeSpanMinutes);

@@ -82,9 +82,9 @@ namespace ShareMemories.Infrastructure.Services
                 LastName = user.LastName,
                 DateOfBirth = user.DateOfBirth,
                 LastUpdated = DateTimeOffset.UtcNow.UtcDateTime,
-                EmailConfirmed = !_identityOptions.Value.SignIn.RequireConfirmedEmail,
-                //TwoFactorEnabled = bool.Parse(_config.GetSection("SystemDefaults:Is2FAEnabled").Value!)                
-                TwoFactorEnabled = true
+                EmailConfirmed = !_identityOptions.Value.SignIn.RequireConfirmedEmail, // configured in Services.AddIdentity - options.SignIn.RequireConfirmedEmail. Store the opposite to your setting!
+                TwoFactorEnabled = bool.Parse(_config.GetSection("SystemDefaults:Is2FAEnabled").Value!) // retrieve form appsettings in API
+                //TwoFactorEnabled = true
             };
 
             if (await _roleManager.RoleExistsAsync(DEFAULT_ROLE)) // verify that the role exists
@@ -115,7 +115,7 @@ namespace ShareMemories.Infrastructure.Services
                         {                            
                             string verificationCode = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser); // generate token to be used in URL
                             await SendEmailTaskAsync(identityUser, verificationCode, EmailType.ConfirmationEmail);
-                            registerResponseModel.Message = $"Username: {user.UserName} registered successfully. A confirmation email has been sent to {identityUser.Email}, you will need to click the link within the email to complete the registration process. Check your Spam folder if it isn't in your Inbox.";
+                            registerResponseModel.Message = $"Username: {user.UserName} registered successfully. A confirmation email with a registration token has been sent to {identityUser.Email}, you will need to complete the registration process by opening the Swagger API '/loginGroup/ConfirmRegisteredEmailAsync' and enter your username and token. Check your Spam folder if it isn't in your Inbox.";
                         }        
                         
                         registerResponseModel.IsStatus = true; // doubling up the IsLoggedIn property to indicate if user was successfully registered or not
@@ -758,15 +758,19 @@ namespace ShareMemories.Infrastructure.Services
             string subject = string.Empty;
             string message = string.Empty;
             string actionLink = string.Empty;
+            string token = string.Empty;
 
             // build up domain\host URL to append confirmation links too
             var domain = $"{_httpContextAccessor.HttpContext?.Request.Scheme}://{_httpContextAccessor.HttpContext?.Request.Host}";
 
             if (emailType == EmailType.ConfirmationEmail)
             {
-                actionLink = $"{domain}{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+                // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!
+                //actionLink = $"{domain}{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+
+                token = Uri.EscapeDataString(verificationCode);
                 subject = "Confirmation Email";
-                message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, actionLink);
+                message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, token);
             }
             else if (emailType == EmailType.PasswordReset)
             {

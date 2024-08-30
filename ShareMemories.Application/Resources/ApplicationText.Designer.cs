@@ -63,14 +63,17 @@ namespace ShareMemories.Application.Resources {
         /// <summary>
         ///   Looks up a localized string similar to Hello {0}
         ///
-        ///     Thank you for registering. Please confirm your email by clicking the link below:
+        ///Thank you for registering. 
+        ///
+        ///Please confirm your email address by clicking the Swagger API link &quot;/loginGroup/ConfirmRegisteredEmailAsync&quot; and enter your Usrname and the token below:
+        ///NB: Normally you will have a link here to bring you to the verification page to enter the Username &amp; Token.
         ///     
-        ///     Confirm email link: {1}
+        ///Token: {1}
         ///
-        ///     If you did not register for this site, please ignore this email.
+        ///If you did not register for this site, please ignore this email.
         ///
-        ///     Thanking you
-        ///     O&apos;Neill Says!.
+        ///Thanking you
+        ///O&apos;Neill Says!.
         /// </summary>
         internal static string ConfirmEmailTemplate {
             get {
