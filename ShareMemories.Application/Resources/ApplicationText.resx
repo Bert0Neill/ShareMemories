@@ -172,9 +172,12 @@ O'Neill Says!</value>
     <value>Hello {0}
 
 You have received this 2FA email, as somebody is trying to log into your account. 
-If this is you, click on the link below to complete the login process:
 
-2FA link: {1}
+Please confirm that this is you, by clicking the Swagger API link "/2FAGroup/Verify2FactorAuthenticationAsync" and enter your Username and the 2FA Code below:
+
+NB: Normally once you have attempted to login, a new page will be displayed to enter the 2FA code - which is from the same domain (a link from an email will not pass CORS security) - this is why you see the likes of eBay etc. displaying a page for you to enter the username &amp; code.
+
+2FA code: {1}
 
 If you are not trying to log into your account, ignore this email and contact our administration team at the email address below.
 

@@ -84,7 +84,6 @@ namespace ShareMemories.Infrastructure.Services
                 LastUpdated = DateTimeOffset.UtcNow.UtcDateTime,
                 EmailConfirmed = !_identityOptions.Value.SignIn.RequireConfirmedEmail, // configured in Services.AddIdentity - options.SignIn.RequireConfirmedEmail. Store the opposite to your setting!
                 TwoFactorEnabled = bool.Parse(_config.GetSection("SystemDefaults:Is2FAEnabled").Value!) // retrieve form appsettings in API
-                //TwoFactorEnabled = true
             };
 
             if (await _roleManager.RoleExistsAsync(DEFAULT_ROLE)) // verify that the role exists
@@ -165,7 +164,7 @@ namespace ShareMemories.Infrastructure.Services
             else if (loginResult.RequiresTwoFactor) // valid user at this stage - determine if 2FA is enabled and halt login- send 2fa email
             {
                 await SendTwoFactorAuthenticationAsync(identityUser!);
-                response.Message = "Two-factor authentication is enabled on your account. You have been sent an email with a OTP, click on the link to complete your login.";
+                response.Message = "Two-factor authentication is enabled on your account. You have been sent an email with a OTP, click on the Swagger API '/2FAGroup/Verify2FactorAuthenticationAsync' and enter your username and the code supplied to complete your login.";
             }
             else if (loginResult.Succeeded)
             {
@@ -180,8 +179,7 @@ namespace ShareMemories.Infrastructure.Services
 
                     // sign-in again with extended duration
                     await _signInManager.SignInAsync(identityUser, authProperties);
-                }
-
+                }                
                 await AssignJwtTokensResponse(response, identityUser, roles); // create JWT bearer
             }
 
@@ -568,6 +566,28 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
+
+        public async Task<LoginRegisterRefreshResponseDto> Request2FACodeAsync(string userName)
+        {
+            Guard.Against.Null(userName, null, "User credentials are not valid");
+
+            var response = new LoginRegisterRefreshResponseDto(); // "IsStatus" will be false by default
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser is null)
+            {
+                response.Message = $"Credentials are not valid";
+                return response;
+            }
+            
+            await SendTwoFactorAuthenticationAsync(identityUser!);
+            response.Message = "Two-factor authentication is enabled on your account. You have been sent an email with a OTP, click on the Swagger API '/2FAGroup/Verify2FactorAuthenticationAsync' and enter your username and the code supplied to complete your login.";
+
+            return response;
+        }
+
+        
+
         /******************************************************
         *         Locking & Unlocking an account              *
         *******************************************************/
@@ -780,9 +800,11 @@ namespace ShareMemories.Infrastructure.Services
             }
             else if (emailType == EmailType.TwoFactorAuthenticationLogin)
             {
-                actionLink = $"{domain}{_config["Environment2faApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
+                // because of CORS security, you can't use a GET URL within an email to redirect the user to a code entry page. Thus, the user gets an email with the code but must use a page within the domain to enter the code!
+                //actionLink = $"{domain}{_config["Environment2faApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
+                token = Uri.EscapeDataString(verificationCode);
                 subject = "2 Factor Authentication - Login";
-                message = string.Format(ApplicationText.TwoFactorAuthenticationTemplate, identityUser.FirstName, actionLink); 
+                message = string.Format(ApplicationText.TwoFactorAuthenticationTemplate, identityUser.FirstName, token); 
             }
             else if (emailType == EmailType.TwoFactorAuthenticationEnabled)
             {

@@ -38,7 +38,29 @@ namespace ShareMemories.API.Endpoints.Auth
                 Summary = "Verify user login with 2FA",
                 Description = "Allow user to authenticate themselves using a code that was emailed to them, as part of the login process (if enabled)",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "2FA - API Library" } }
-            });            
+            });
+
+            /*******************************************************************************************************
+             *                    Request that a new 2FA code be sent to the user                                  *
+             *******************************************************************************************************/
+            twoFAGroup.MapPost("/Request2FACodeAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+
+                var twoFaResponseDto = await authService.Request2FACodeAsync(userName);
+
+                // was the 2FA code sent successfully
+                if (!twoFaResponseDto.IsStatus) return TypedResults.NotFound(twoFaResponseDto.Message);
+                else return TypedResults.Ok(twoFaResponseDto.Message);
+            })
+            .WithName("Request2FACodeAsync")
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Request new 2FA code",
+                Description = "Request a new 2FA code to be sent to the user",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "2FA - API Library" } }
+            });
+
         }
     }
 }

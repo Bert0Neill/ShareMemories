@@ -139,16 +139,10 @@ namespace ShareMemories.Application.Resources {
         ///   Looks up a localized string similar to Hello {0}
         ///
         ///You have received this 2FA email, as somebody is trying to log into your account. 
-        ///If this is you, click on the link below to complete the login process:
         ///
-        ///2FA link: {1}
+        ///Please confirm that this is you, by clicking the Swagger API link &quot;/2FAGroup/Verify2FactorAuthenticationAsync&quot; and enter your Username and the 2FA Code below:
         ///
-        ///If you are not trying to log into your account, ignore this email and contact our administration team at the email address below.
-        ///
-        ///Administration Email: Support@MyDomain.Com
-        ///
-        ///Thanking you
-        ///O&apos;Neill Says!.
+        ///NB: Normally once you have attempted to login, a new page will be displayed to enter the 2FA code - which is from the same domain (a link from an email will not pass CORS security) - this is why you see the likes of eBay etc. displaying a page for you [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string TwoFactorAuthenticationTemplate {
             get {
