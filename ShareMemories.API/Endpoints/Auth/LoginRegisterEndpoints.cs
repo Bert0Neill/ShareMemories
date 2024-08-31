@@ -3,11 +3,14 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
 using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
+using ShareMemories.Infrastructure.Services;
+using System.Security.Claims;
 
 namespace ShareMemories.API.Endpoints.Auth
 {
@@ -141,6 +144,29 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Request a new email confirmation, to complete registration",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
+
+            /*******************************************************************************************************
+             *              Update User's details (Name, email, phone number, isPersistent for e.g.)               *
+             *******************************************************************************************************/
+            loginRegisterGroup.MapPut("/UpdateUserDetailsAsync", async Task<Results<Ok<string>, NotFound<string>>> (HttpContext context, UpdateUserDetailsModel userUpdateDetails, IAuthService authService) =>
+            {
+                Guard.Against.Null(userUpdateDetails, nameof(userUpdateDetails));
+
+                var loginRegisterRefreshResponseDto = await authService.UpdateUserDetailsAsync(context.Request.Cookies["jwtToken"]!, userUpdateDetails);
+
+                // was the email confirmation sent successfully
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
+            })
+            .RequireAuthorization()
+            .WithName("UpdateUserDetailsAsync")
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "Update user's details",
+                Description = "Update Email, Phone, First Name, Last Name or DOB",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+            
         }
 
         private static void VerifyRequestCookiesExist(HttpContext context)

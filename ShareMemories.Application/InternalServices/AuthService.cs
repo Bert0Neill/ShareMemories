@@ -55,12 +55,12 @@ namespace ShareMemories.Infrastructure.Services
         /**************************************************************************************************
         *           Register, Login, Logout, Verify Confirm Email & Request Confirm Email                 *
         ***************************************************************************************************/
-        public async Task<LoginRegisterRefreshResponseModel> RegisterUserAsync(RegisterUserModel user)
+        public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserModel user)
         {
             Guard.Against.Null(user, null, "User credentials are not valid");
 
             const string DEFAULT_ROLE = "User";
-            LoginRegisterRefreshResponseModel registerResponseModel = new() { Message = $"Username: {user.UserName} registered successfully. You can now login" };
+            LoginRegisterRefreshResponseDto registerResponseModel = new() { Message = $"Username: {user.UserName} registered successfully. You can now login" };
 
             // verify that Username and\or email have not already been registered
             if (await IsUsernameOrEmailTakenAsync(user.UserName, user.Email))
@@ -280,6 +280,87 @@ namespace ShareMemories.Infrastructure.Services
 
             return response;
         }
+
+        public async Task<LoginRegisterRefreshResponseDto> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsModel userUpdateDetails)
+        {
+            Guard.Against.Null(userUpdateDetails, null, "User details are not valid");
+            
+            LoginRegisterRefreshResponseDto registerResponseModel = new() { Message = $"Username: {userUpdateDetails.UserName} registered successfully. You can now login" };
+
+            var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
+
+            // not able to retrieve user from Jwt bearer token
+            if (claimsPrincipal?.Identity?.Name is null)
+            {
+                registerResponseModel.IsStatus = false;
+                registerResponseModel.Message = "Jwt Bearer is not valid, during update process";
+            }
+            else
+            {
+                var identityUser = await _userManager.FindByNameAsync(claimsPrincipal.Identity.Name); // retrieve user principal
+                var roles = await _userManager.GetRolesAsync(identityUser);
+
+                if (identityUser is null)
+                {
+                    registerResponseModel.IsStatus = false;
+                    registerResponseModel.Message = $"User '{claimsPrincipal.Identity.Name}' not found during details update";
+                    return registerResponseModel;
+                }
+
+                // verify that email is not in use already by another account
+                if (!String.IsNullOrEmpty(userUpdateDetails.Email))
+                {
+                    var user = await _userManager.FindByEmailAsync(userUpdateDetails.Email);
+                    if (user is not null)
+                    {
+                        if (user.UserName != claimsPrincipal.Identity.Name)
+                        {
+                            registerResponseModel.IsStatus = false;
+                            registerResponseModel.Message = "Email has already been assigned to another user";
+                            return registerResponseModel;
+                        }
+                    }
+                }
+
+                // update user details (that have been supplied)
+                identityUser.Email = userUpdateDetails.Email != string.Empty ? userUpdateDetails.Email : identityUser.Email;
+                identityUser.PhoneNumber = userUpdateDetails.PhoneNumber != string.Empty ? userUpdateDetails.PhoneNumber : identityUser.PhoneNumber;
+                identityUser.FirstName = userUpdateDetails.FirstName != string.Empty ? userUpdateDetails.FirstName : identityUser.FirstName;
+                identityUser.LastName = userUpdateDetails.LastName != string.Empty ? userUpdateDetails.LastName : identityUser.LastName;
+                identityUser.DateOfBirth = userUpdateDetails.DateOfBirth != default(DateOnly)  ? userUpdateDetails.DateOfBirth  : identityUser.DateOfBirth;
+
+                // create new tokens for clients browser based on their updated details
+                registerResponseModel.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, int.Parse(_config["Jwt:JWT_TOKEN_EXPIRE_MINS"]!));
+                registerResponseModel.JwtRefreshToken = _jwtTokenService.GenerateRefreshToken();
+                registerResponseModel.JwtRefreshTokenExpire = DateTimeOffset.UtcNow.AddDays(int.Parse(_config["Jwt:REFRESH_TOKEN_EXPIRE_DAYS"]!)).UtcDateTime;
+                registerResponseModel.JwtTokenExpire = DateTimeOffset.UtcNow.AddMinutes(int.Parse(_config["Jwt:JWT_TOKEN_EXPIRE_MINS"]!)).UtcDateTime;
+
+                // update AspNetUser DB table with latest details 
+                identityUser.RefreshToken = registerResponseModel.JwtRefreshToken;
+                identityUser.RefreshTokenExpiry = registerResponseModel.JwtRefreshTokenExpire; // refresh token should be longer than JWT bearer token
+                identityUser.LastUpdated = DateTimeOffset.UtcNow.UtcDateTime;
+
+                var result = await _userManager.UpdateAsync(identityUser); // update database
+
+                // handle a database fail
+                if (!result.Succeeded)
+                {
+                    registerResponseModel.IsStatus = false;
+                    var errors = new StringBuilder();
+                    result.Errors.ToList().ForEach(err => errors.AppendLine($"{err.Description}")); // build up a string of faults
+                    registerResponseModel.Message = errors.ToString();
+                }
+                else // success
+                {
+                    // notify user of update (return new JWT Bearer Token and refresh Tokens)
+                    registerResponseModel.IsStatus = true;
+                    registerResponseModel.Message = "User details have been updated";
+                }
+            }
+
+            return registerResponseModel;
+        }
+        
 
         /******************************************************
         *               JWT Refresh & Revoke                  *
@@ -909,8 +990,8 @@ namespace ShareMemories.Infrastructure.Services
             var emailExists = emailTask != null;
 
             return usernameExists || emailExists;
-        }
-       
+        }        
+
         #endregion
     }
 }

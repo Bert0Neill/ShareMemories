@@ -11,7 +11,7 @@ namespace ShareMemories.Infrastructure.Interfaces
     {
         Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user);
         Task<LoginRegisterRefreshResponseDto> RefreshTokenAsync(string jwtToken, string refreshToken);
-        Task<LoginRegisterRefreshResponseModel> RegisterUserAsync(RegisterUserModel user);
+        Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserModel user);
         Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken);
         Task<LoginRegisterRefreshResponseDto> RevokeTokenLogoutAsync(string jwtToken);
         Task<LoginRegisterRefreshResponseDto> VerifyEmailConfirmationAsync(string userName, string token);
@@ -26,5 +26,6 @@ namespace ShareMemories.Infrastructure.Interfaces
         Task<LoginRegisterRefreshResponseDto> UnlockAccountVerifiedByAdminAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> LockAccountAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> RequestUnlockAsync(string userName);
+        Task<LoginRegisterRefreshResponseDto> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsModel userUpdateDetails);
     }
 }

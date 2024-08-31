@@ -22,7 +22,9 @@ namespace ShareMemories.Domain.Models
         public string ConfirmPassword { get; set; } = string.Empty;
 
         [Required]
-        public DateOnly DateOfBirth { get; set; }         
+        public DateOnly DateOfBirth { get; set; }
 
+        [Required, Phone]
+        public string PhoneNumber { get; set; } = string.Empty;
     }
 }
