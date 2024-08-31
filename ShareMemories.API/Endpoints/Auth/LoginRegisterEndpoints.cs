@@ -146,9 +146,9 @@ namespace ShareMemories.API.Endpoints.Auth
             });
 
             /*******************************************************************************************************
-             *              Update User's details (Name, email, phone number, isPersistent for e.g.)               *
+             *              Update User's details (Name, email, phone number for e.g.)               *
              *******************************************************************************************************/
-            loginRegisterGroup.MapPut("/UpdateUserDetailsAsync", async Task<Results<Ok<string>, NotFound<string>>> (HttpContext context, UpdateUserDetailsModel userUpdateDetails, IAuthService authService) =>
+            loginRegisterGroup.MapPut("/UpdateUserDetailsAsync", async Task<Results<Ok<string>, NotFound<string>>> (HttpContext context, UpdateUserDetailsDto userUpdateDetails, IAuthService authService) =>
             {
                 Guard.Against.Null(userUpdateDetails, nameof(userUpdateDetails));
 
@@ -166,7 +166,29 @@ namespace ShareMemories.API.Endpoints.Auth
                 Description = "Update Email, Phone, First Name, Last Name or DOB",
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
             });
-            
+
+            /*******************************************************************************************************
+            *                       View User's details (Name, email, phone number for e.g.)                       *
+            *******************************************************************************************************/
+            loginRegisterGroup.MapGet("/ViewUserDetailsAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
+            {
+                Guard.Against.Empty(userName, "Username is missing");
+
+                var loginRegisterRefreshResponseDto = await authService.ViewUserDetailsAsync(userName);
+
+                // was the email confirmation sent successfully
+                if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
+                else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
+            })
+            .RequireAuthorization()
+            .WithName("ViewUserDetailsAsync")
+            .WithOpenApi(x => new OpenApiOperation(x)
+            {
+                Summary = "View user's details",
+                Description = "View Email, Phone, First Name, Last Name, Roles and DOB",
+                Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
+            });
+
         }
 
         private static void VerifyRequestCookiesExist(HttpContext context)

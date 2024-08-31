@@ -26,6 +26,7 @@ namespace ShareMemories.Infrastructure.Interfaces
         Task<LoginRegisterRefreshResponseDto> UnlockAccountVerifiedByAdminAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> LockAccountAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> RequestUnlockAsync(string userName);
-        Task<LoginRegisterRefreshResponseDto> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsModel userUpdateDetails);
+        Task<LoginRegisterRefreshResponseDto> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsDto userUpdateDetails);
+        Task<LoginRegisterRefreshResponseDto> ViewUserDetailsAsync(string userName);
     }
 }

@@ -114,7 +114,19 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.AddPolicy("UserOrQaPolicy", policy => policy.RequireRole("User", "Qa"));
             });
 
-           
+            // add cookie settings
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.LoginPath = "/LoginAsync";  // Set your login path
+                options.LogoutPath = "/LogoutAsync";  // Set your logout path
+                options.SlidingExpiration = true;
+                options.ExpireTimeSpan = TimeSpan.FromDays(1);  // when IsPersistent (Remember me) is true, use this timespan for SSO
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            });
+
+
+
 
             services.AddAuthorization();
         }

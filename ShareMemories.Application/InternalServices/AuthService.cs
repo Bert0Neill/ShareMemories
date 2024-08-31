@@ -281,7 +281,7 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsModel userUpdateDetails)
+        public async Task<LoginRegisterRefreshResponseDto> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsDto userUpdateDetails)
         {
             Guard.Against.Null(userUpdateDetails, null, "User details are not valid");
             
@@ -360,8 +360,36 @@ namespace ShareMemories.Infrastructure.Services
 
             return registerResponseModel;
         }
-        
 
+        public async Task<LoginRegisterRefreshResponseDto> ViewUserDetailsAsync(string userName)
+        {
+            Guard.Against.Null(userName, null, "User credentials are not valid");
+
+            var response = new LoginRegisterRefreshResponseDto() { Message = $"Details for {userName}" }; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(userName);
+
+            if (identityUser == null) response.Message = "Invalid credentials supplied.";
+            else
+            {
+                response.IsStatus = true;
+
+                response.Message += Environment.NewLine;
+                response.Message += $"User ID: {identityUser.Id}\n";
+                response.Message += $"Username: {identityUser.UserName}\n";
+                response.Message += $"Email: {identityUser.Email}\n";
+                response.Message += $"Phone: {identityUser.PhoneNumber}\n";
+                response.Message += $"First Name: {identityUser.FirstName}\n";
+                response.Message += $"Last Name: {identityUser.LastName}\n";
+                response.Message += $"DOB: {identityUser.DateOfBirth}\n";
+
+                var roles = await _userManager.GetRolesAsync(identityUser);
+                response.Message += "Roles: " + string.Join(", ", roles);
+            }
+
+            return response;
+        }
+        
         /******************************************************
         *               JWT Refresh & Revoke                  *
         *******************************************************/
@@ -668,7 +696,6 @@ namespace ShareMemories.Infrastructure.Services
             }
             return response;
         }
-
 
         public async Task<LoginRegisterRefreshResponseDto> Request2FACodeAsync(string userName)
         {
