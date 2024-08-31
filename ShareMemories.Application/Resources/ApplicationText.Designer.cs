@@ -66,6 +66,7 @@ namespace ShareMemories.Application.Resources {
         ///Thank you for registering. 
         ///
         ///Please confirm your email address by clicking the Swagger API link &quot;/loginGroup/ConfirmRegisteredEmailAsync&quot; and enter your Usrname and the token below:
+        ///
         ///NB: Normally you will have a link here to bring you to the verification page to enter the Username &amp; Token.
         ///     
         ///Token: {1}
@@ -120,9 +121,13 @@ namespace ShareMemories.Application.Resources {
         /// <summary>
         ///   Looks up a localized string similar to Hello {0}
         ///
-        /// We received a request to reset your password. Click the link below to reset it:
+        ///We received a request to reset your password. 
+        ///
+        ///Click on the Swagger API link &quot;/passwordGroup/VerifyPasswordResetAsync&quot; and enter your new password and the reset password token below:
+        ///
+        ///NB: Normally you will have a link here to bring you to the verification page to enter the new Password &amp; Token.
         /// 
-        /// Reset password link: {1}
+        /// Reset password token: {1}
         ///
         /// If you did not request a password reset, please ignore this email.
         ///

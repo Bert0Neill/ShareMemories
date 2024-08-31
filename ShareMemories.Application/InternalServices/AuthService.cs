@@ -1,7 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +15,10 @@ using ShareMemories.Domain.Entities;
 using ShareMemories.Domain.Enums;
 using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
-using System;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ShareMemories.Infrastructure.Services
 {
@@ -413,19 +409,36 @@ namespace ShareMemories.Infrastructure.Services
         *           Password reset request & Verify           *
         *******************************************************/
 
-        public async Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string userName, string token, string password)
+        public async Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string jwtToken, string token, string newPassword, string oldPassword)
         {
-            Guard.Against.Null(userName, null, "User credentials are not valid");
+            Guard.Against.Null(jwtToken, null, "JWT Bearer is not valid");
             Guard.Against.Null(token, null, "Token is not valid");
-            Guard.Against.Null(password, null, "Password is not valid");
+            Guard.Against.Null(newPassword, null, "Password is not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = "Password was reset successfully." }; // default message
+            var response = new LoginRegisterRefreshResponseDto() { Message= "Password was reset successfully." }; // default message
 
-            var identityUser = await _userManager.FindByNameAsync(userName);
+            var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
+
+            // not able to retrieve user from Jwt bearer token
+            if (claimsPrincipal?.Identity?.Name is null)
+            {
+                response.Message = "Jwt Bearer is not valid, during password request";
+                return response;
+            }
+
+            var identityUser = await _userManager.FindByNameAsync(claimsPrincipal.Identity.Name);
             if (identityUser == null) response.Message = "Invalid credentials or token";
             else
             {
-                var result = await _userManager.ResetPasswordAsync(identityUser, token, password);
+                // Verify the old password
+                var passwordCheck = await _userManager.CheckPasswordAsync(identityUser, oldPassword);
+                if (!passwordCheck)
+                {
+                    response.Message = "Old password is incorrect";
+                    return response;
+                }
+
+                var result = await _userManager.ResetPasswordAsync(identityUser, token, newPassword);
 
                 if (result.Succeeded) response.IsStatus = true;
                 else
@@ -438,14 +451,23 @@ namespace ShareMemories.Infrastructure.Services
 
             return response;
         }
-        
-        public async Task<LoginRegisterRefreshResponseDto> RequestPasswordResetAsync(string userName)
+
+        public async Task<LoginRegisterRefreshResponseDto> RequestPasswordResetAsync(string jwtToken)
         {
-            Guard.Against.Null(userName, null, "User credentials are not valid");
+            var response = new LoginRegisterRefreshResponseDto();
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"A password reset request has been sent to user - {userName}." }; // default message
+            var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
-            var identityUser = await _userManager.FindByNameAsync(userName);
+            // not able to retrieve user from Jwt bearer token
+            if (claimsPrincipal?.Identity?.Name is null)
+            {                
+                response.Message = "Jwt Bearer is not valid, during password request";
+                return response;
+            }
+
+            response.Message = $"A password reset request has been sent to user - {claimsPrincipal.Identity.Name}."; // default message
+
+            var identityUser = await _userManager.FindByNameAsync(claimsPrincipal.Identity.Name);
 
             if (identityUser == null) response.Message = "An invalid email or the email is not register to your account";
             else
@@ -586,7 +608,6 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        
 
         /******************************************************
         *         Locking & Unlocking an account              *
@@ -794,9 +815,12 @@ namespace ShareMemories.Infrastructure.Services
             }
             else if (emailType == EmailType.PasswordReset)
             {
-                actionLink = $"{domain}{_config["EnvironmentResetPasswordApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+                // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!
+                //actionLink = $"{domain}{_config["EnvironmentResetPasswordApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
+
+                token = Uri.EscapeDataString(verificationCode);
                 subject = "Password Reset Request";
-                message = string.Format(ApplicationText.ResetPasswordTemplate, identityUser.FirstName, actionLink);                
+                message = string.Format(ApplicationText.ResetPasswordTemplate, identityUser.FirstName, token);                
             }
             else if (emailType == EmailType.TwoFactorAuthenticationLogin)
             {

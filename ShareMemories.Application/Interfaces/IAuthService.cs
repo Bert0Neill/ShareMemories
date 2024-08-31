@@ -15,8 +15,8 @@ namespace ShareMemories.Infrastructure.Interfaces
         Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken);
         Task<LoginRegisterRefreshResponseDto> RevokeTokenLogoutAsync(string jwtToken);
         Task<LoginRegisterRefreshResponseDto> VerifyEmailConfirmationAsync(string userName, string token);
-        Task<LoginRegisterRefreshResponseDto> RequestPasswordResetAsync(string userName);
-        Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string userName, string token, string password);
+        Task<LoginRegisterRefreshResponseDto> RequestPasswordResetAsync(string jwtToken);        
+        Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string jwtToken, string token, string newPassword, string oldPassword);
         Task<LoginRegisterRefreshResponseDto> RequestConfirmationEmailAsync(string userName);
         Task<LoginRegisterRefreshResponseDto> Verify2FactorAuthenticationAsync(string userName, string verificationCode);
         Task<LoginRegisterRefreshResponseDto> Disable2FactorAuthenticationForUserAsync(string userName);        

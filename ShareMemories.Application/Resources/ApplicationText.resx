@@ -123,6 +123,7 @@
 Thank you for registering. 
 
 Please confirm your email address by clicking the Swagger API link "/loginGroup/ConfirmRegisteredEmailAsync" and enter your Usrname and the token below:
+
 NB: Normally you will have a link here to bring you to the verification page to enter the Username &amp; Token.
      
 Token: {1}
@@ -159,9 +160,13 @@ O'Neill Says!</value>
   <data name="ResetPasswordTemplate" xml:space="preserve">
     <value>Hello {0}
 
- We received a request to reset your password. Click the link below to reset it:
+We received a request to reset your password. 
+
+Click on the Swagger API link "/passwordGroup/VerifyPasswordResetAsync" and enter your new password and the reset password token below:
+
+NB: Normally you will have a link here to bring you to the verification page to enter the new Password &amp; Token.
  
- Reset password link: {1}
+ Reset password token: {1}
 
  If you did not request a password reset, please ignore this email.
 

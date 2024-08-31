@@ -184,13 +184,13 @@ namespace ShareMemories.API.Endpoints.Auth.Original
             /*******************************************************************************************************
              *          Verify password reset (this will be called by email link to with new password)             *
              *******************************************************************************************************/
-            group.MapPost("/VerifyPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, string password, IAuthService authService) =>
+            group.MapPost("/VerifyPasswordResetAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, string newPassword, string oldPassword, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Email is missing");
-                Guard.Against.Empty(password, "Password is missing");
+                Guard.Against.Empty(newPassword, "Password is missing");
                 Guard.Against.Empty(token, "Password reset token is missing");
 
-                var loginRegisterRefreshResponseDto = await authService.VerifyPasswordResetAsync(userName, token, password);
+                var loginRegisterRefreshResponseDto = await authService.VerifyPasswordResetAsync(userName, token, newPassword, oldPassword);
 
                 // was the email confirmation successful
                 if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
