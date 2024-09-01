@@ -188,7 +188,13 @@ O'Neill Says!</value>
 &lt;p&gt;We received a request to unlock your account.&lt;/p&gt;
 &lt;p&gt;Unlock your account by clicking the link below:&lt;/p&gt;
 &lt;p&gt;&lt;a href='{1}'&gt;Unlock My Account&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;If you did not make request a request to unlock your account, please ignore this email and contact Administration - Support@MyDomain.Com&lt;/p&gt;
+&lt;p&gt;If you did not make a request to unlock your account, please ignore this email and contact Administration - Support@MyDomain.Com&lt;/p&gt;
+&lt;p&gt;Thanking you,&lt;br/&gt;O'Neill Says!&lt;/p&gt;</value>
+  </data>
+  <data name="UserDetailsUpdatedTemplate" xml:space="preserve">
+    <value>&lt;p&gt;Hello {0}&lt;/p&gt;
+&lt;p&gt;Your details have been updated.&lt;/p&gt;
+&lt;p&gt;If you did not make a request to update your account, please contact Administration - Support@MyDomain.Com&lt;/p&gt;
 &lt;p&gt;Thanking you,&lt;br/&gt;O'Neill Says!&lt;/p&gt;</value>
   </data>
 </root>

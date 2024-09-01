@@ -1,11 +1,5 @@
-﻿using ShareMemories.Domain.DTOs;
-using ShareMemories.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using ShareMemories.Domain.Entities;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ShareMemories.Application.Interfaces
 {

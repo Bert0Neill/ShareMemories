@@ -17,6 +17,7 @@
     <Compile Include="DTOs\LoginUserDto.cs" />
     <Compile Include="DTOs\RefreshTokenDto.cs" />
     <Compile Include="DTOs\RegisterUserDto.cs" />
+    <Compile Include="DTOs\UpdateUserDetailsDto.cs" />
   </ItemGroup>
 
 </Project>

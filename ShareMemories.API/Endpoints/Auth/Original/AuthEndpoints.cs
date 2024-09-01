@@ -1,18 +1,13 @@
 ﻿using Ardalis.GuardClauses;
 using AutoMapper;
-using Mailosaur.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.OpenApi.Models;
 using ShareMemories.API.Validators;
-using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
-using ShareMemories.Infrastructure.Services;
+using ShareMemories.Shared.DTOs;
 
 namespace ShareMemories.API.Endpoints.Auth.Original
 {
@@ -47,19 +42,16 @@ namespace ShareMemories.API.Endpoints.Auth.Original
                   Description = "Registers a new user within the .Net Roles Identity DB. Must have a unique Username & Email to be valid. Returns a boolean status and an error string (if applicable).",
                   Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Login/Register/Refresh API Library" } }
               })
-              .CacheOutput(x => x.Tag("LoginUser")) // invalidate data when new record added, by using tag in Post API                                                     
-
-            // !!! Password validation done by builder.service.AddIdentity in Programs.cs
-            .AddEndpointFilter<GenericValidationFilter<RegisterUserValidator, RegisterUserDto>>(); // apply fluent validation to DTO model from client and pass back broken rules    
+              .CacheOutput(x => x.Tag("LoginUser")); // invalidate data when new record added, by using tag in Post API                                                                 
 
             /*******************************************************************************************************
              * Login an already registered user
              *******************************************************************************************************/
             group.MapPost("/LoginAsync", async (IMapper mapper, LoginUserDto loginDto, IAuthService authService, HttpContext context) =>
             {
-                // var loginUserModel = mapper.Map<LoginUserModel>(loginDto);
+                var loginUserModel = mapper.Map<LoginUserModel>(loginDto);
 
-                var loginRegisterRefreshResponseDto = await authService.LoginAsync(loginDto);
+                var loginRegisterRefreshResponseDto = await authService.LoginAsync(loginUserModel);
 
                 if (loginRegisterRefreshResponseDto.IsStatus)
                 {

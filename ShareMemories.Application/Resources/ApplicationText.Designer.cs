@@ -152,12 +152,24 @@ namespace ShareMemories.Application.Resources {
         ///&lt;p&gt;We received a request to unlock your account.&lt;/p&gt;
         ///&lt;p&gt;Unlock your account by clicking the link below:&lt;/p&gt;
         ///&lt;p&gt;&lt;a href=&apos;{1}&apos;&gt;Unlock My Account&lt;/a&gt;&lt;/p&gt;
-        ///&lt;p&gt;If you did not make request a request to unlock your account, please ignore this email and contact Administration - Support@MyDomain.Com&lt;/p&gt;
+        ///&lt;p&gt;If you did not make a request to unlock your account, please ignore this email and contact Administration - Support@MyDomain.Com&lt;/p&gt;
         ///&lt;p&gt;Thanking you,&lt;br/&gt;O&apos;Neill Says!&lt;/p&gt;.
         /// </summary>
         internal static string UnlockAccountTemplate {
             get {
                 return ResourceManager.GetString("UnlockAccountTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt;
+        ///&lt;p&gt;Your details have been updated.&lt;/p&gt;
+        ///&lt;p&gt;If you did not make a request to update your account, please contact Administration - Support@MyDomain.Com&lt;/p&gt;
+        ///&lt;p&gt;Thanking you,&lt;br/&gt;O&apos;Neill Says!&lt;/p&gt;.
+        /// </summary>
+        internal static string UserDetailsUpdatedTemplate {
+            get {
+                return ResourceManager.GetString("UserDetailsUpdatedTemplate", resourceCulture);
             }
         }
     }

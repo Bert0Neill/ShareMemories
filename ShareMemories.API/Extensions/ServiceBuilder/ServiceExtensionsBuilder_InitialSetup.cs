@@ -27,6 +27,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
             services.AddAutoMapper(typeof(LoginProfile));
             services.AddAutoMapper(typeof(RegisterUserProfile));
             services.AddAutoMapper(typeof(LoginRegisterRefreshResponseProfile));
+            services.AddAutoMapper(typeof(UpdateUserProfile));
 
             // Register the IMemoryCache service for revoking invalidated JWT's
             services.AddMemoryCache();

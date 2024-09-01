@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
-using ShareMemories.Domain.DTOs;
-using System;
+using ShareMemories.Shared.DTOs;
 using System.Text.RegularExpressions;
 
 namespace ShareMemories.API.Validators

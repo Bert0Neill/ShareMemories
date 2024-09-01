@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ShareMemories.Shared.DTOs
 {
-    public class RefreshTokenDto
+    public class RefreshTokenDto()
     {
         public string JwtToken { get; set; } = string.Empty;    
         public string JwtRefreshToken { get; set; } = string.Empty;

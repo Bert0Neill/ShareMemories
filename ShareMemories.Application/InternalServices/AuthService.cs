@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ShareMemories.Application.Interfaces;
 using ShareMemories.Application.Resources;
-using ShareMemories.Domain.DTOs;
 using ShareMemories.Domain.Entities;
 using ShareMemories.Domain.Enums;
 using ShareMemories.Domain.Models;
@@ -55,12 +54,12 @@ namespace ShareMemories.Infrastructure.Services
         /**************************************************************************************************
         *           Register, Login, Logout, Verify Confirm Email & Request Confirm Email                 *
         ***************************************************************************************************/
-        public async Task<LoginRegisterRefreshResponseDto> RegisterUserAsync(RegisterUserModel user)
+        public async Task<LoginRegisterRefreshResponseModel> RegisterUserAsync(RegisterUserModel user)
         {
             Guard.Against.Null(user, null, "User credentials are not valid");
 
             const string DEFAULT_ROLE = "User";
-            LoginRegisterRefreshResponseDto registerResponseModel = new() { Message = $"Username: {user.UserName} registered successfully. You can now login" };
+            LoginRegisterRefreshResponseModel registerResponseModel = new() { Message = $"Username: {user.UserName} registered successfully. You can now login" };
 
             // verify that Username and\or email have not already been registered
             if (await IsUsernameOrEmailTakenAsync(user.UserName, user.Email))
@@ -126,11 +125,11 @@ namespace ShareMemories.Infrastructure.Services
             return registerResponseModel;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> LoginAsync(LoginUserDto user)
+        public async Task<LoginRegisterRefreshResponseModel> LoginAsync(LoginUserModel user)
         {
             Guard.Against.Null(user, null, "User credentials are not valid");   
 
-            var response = new LoginRegisterRefreshResponseDto(); // "IsStatus" will be false by default
+            var response = new LoginRegisterRefreshResponseModel(); // "IsStatus" will be false by default
             var identityUser = await _userManager.FindByNameAsync(user.UserName);
 
             if (identityUser is null)
@@ -195,11 +194,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> LogoutAsync(string jwtToken)
+        public async Task<LoginRegisterRefreshResponseModel> LogoutAsync(string jwtToken)
         {
             Guard.Against.Null(jwtToken, null, "Token is not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully logged out" }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = "Successfully logged out" }; // default message
 
             var principal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
@@ -240,12 +239,12 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> VerifyEmailConfirmationAsync(string userName, string token)
+        public async Task<LoginRegisterRefreshResponseModel> VerifyEmailConfirmationAsync(string userName, string token)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
             Guard.Against.Null(token, null, "Token is not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = "Email confirmation successful, you can now login." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = "Email confirmation successful, you can now login." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
             if (identityUser == null) response.Message = "Invalid credentials or token";
@@ -268,11 +267,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> RequestConfirmationEmailAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseModel> RequestConfirmationEmailAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"A new confirmation email has been sent - check your Spam folder." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = $"A new confirmation email has been sent - check your Spam folder." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -294,11 +293,12 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsDto userUpdateDetails)
+        //public async Task<LoginRegisterRefreshResponseModel> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsDto userUpdateDetails)
+        public async Task<LoginRegisterRefreshResponseModel> UpdateUserDetailsAsync(string jwtToken, RegisterUserModel userUpdateDetails)
         {
             Guard.Against.Null(userUpdateDetails, null, "User details are not valid");
             
-            LoginRegisterRefreshResponseDto registerResponseModel = new() { Message = $"Username: {userUpdateDetails.UserName} registered successfully. You can now login" };
+            LoginRegisterRefreshResponseModel registerResponseModel = new() { Message = $"Username: {userUpdateDetails.UserName} registered successfully. You can now login" };
 
             var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
@@ -368,17 +368,20 @@ namespace ShareMemories.Infrastructure.Services
                     // notify user of update (return new JWT Bearer Token and refresh Tokens)
                     registerResponseModel.IsStatus = true;
                     registerResponseModel.Message = "User details have been updated";
+
+                    // notify user that details have been updated
+                    await SendEmailTaskAsync(identityUser, string.Empty, EmailType.DetailsUpdated);
                 }
             }
 
             return registerResponseModel;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> ViewUserDetailsAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseModel> ViewUserDetailsAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"Details for {userName}" }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = $"Details for {userName}" }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -407,9 +410,9 @@ namespace ShareMemories.Infrastructure.Services
         *               JWT Refresh & Revoke                  *
         *******************************************************/
 
-        public async Task<LoginRegisterRefreshResponseDto> RefreshTokenAsync(string jwtToken, string refreshToken)
+        public async Task<LoginRegisterRefreshResponseModel> RefreshTokenAsync(string jwtToken, string refreshToken)
         {
-            var response = new LoginRegisterRefreshResponseDto();
+            var response = new LoginRegisterRefreshResponseModel();
 
             try
             {
@@ -474,11 +477,11 @@ namespace ShareMemories.Infrastructure.Services
             finally { _isRefreshing = false; } // reset for next refresh call
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> RevokeTokenLogoutAsync(string jwtToken)
+        public async Task<LoginRegisterRefreshResponseModel> RevokeTokenLogoutAsync(string jwtToken)
         {
             Guard.Against.Null(jwtToken, null, "Token is not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = "Successfully revoked JWT token", IsStatus = true }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = "Successfully revoked JWT token", IsStatus = true }; // default message
 
             var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
@@ -531,13 +534,13 @@ namespace ShareMemories.Infrastructure.Services
         *           Password reset request & Verify           *
         *******************************************************/
 
-        public async Task<LoginRegisterRefreshResponseDto> VerifyPasswordResetAsync(string jwtToken, string token, string newPassword, string oldPassword)
+        public async Task<LoginRegisterRefreshResponseModel> VerifyPasswordResetAsync(string jwtToken, string token, string newPassword, string oldPassword)
         {
             Guard.Against.Null(jwtToken, null, "JWT Bearer is not valid");
             Guard.Against.Null(token, null, "Token is not valid");
             Guard.Against.Null(newPassword, null, "Password is not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message= "Password was reset successfully." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message= "Password was reset successfully." }; // default message
 
             var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
@@ -574,9 +577,9 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> RequestPasswordResetAsync(string jwtToken)
+        public async Task<LoginRegisterRefreshResponseModel> RequestPasswordResetAsync(string jwtToken)
         {
-            var response = new LoginRegisterRefreshResponseDto();
+            var response = new LoginRegisterRefreshResponseModel();
 
             var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
@@ -606,11 +609,11 @@ namespace ShareMemories.Infrastructure.Services
         *         Enable & Disable 2FA on account             *
         *******************************************************/
 
-        public async Task<LoginRegisterRefreshResponseDto> Enable2FactorAuthenticationForUserAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseModel> Enable2FactorAuthenticationForUserAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"User {userName} has had their 2FA enabled." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = $"User {userName} has had their 2FA enabled." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -640,11 +643,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> Disable2FactorAuthenticationForUserAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseModel> Disable2FactorAuthenticationForUserAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"User {userName} has had their 2FA disabled." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = $"User {userName} has had their 2FA disabled." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -674,12 +677,12 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> Verify2FactorAuthenticationAsync(string userName, string verificationCode)
+        public async Task<LoginRegisterRefreshResponseModel> Verify2FactorAuthenticationAsync(string userName, string verificationCode)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
             Guard.Against.Null(verificationCode, null, "Token is not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = "2FA verification successful. You have been verified, you can now call the (secure) API's" }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = "2FA verification successful. You have been verified, you can now call the (secure) API's" }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -710,11 +713,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> Request2FACodeAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseModel> Request2FACodeAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
-            var response = new LoginRegisterRefreshResponseDto(); // "IsStatus" will be false by default
+            var response = new LoginRegisterRefreshResponseModel(); // "IsStatus" will be false by default
             var identityUser = await _userManager.FindByNameAsync(userName);
 
             if (identityUser is null)
@@ -734,13 +737,13 @@ namespace ShareMemories.Infrastructure.Services
         *         Locking & Unlocking an account              *
         *******************************************************/
 
-        public async Task<LoginRegisterRefreshResponseDto> LockAccountAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseModel> LockAccountAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
             int adminLockoutDuration = int.Parse(_config.GetSection("SystemDefaults:AdminLocksAccountLifeSpan").Value); // locked for days
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"User {userName}'s account has been locked." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = $"User {userName}'s account has been locked." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -766,11 +769,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> RequestUnlockAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseModel> RequestUnlockAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"An unlock email request has been sent to user - {userName}." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = $"An unlock email request has been sent to user - {userName}." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -787,12 +790,12 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> UnlockAccountVerifiedByEmailAsync(string userName, string token)
+        public async Task<LoginRegisterRefreshResponseModel> UnlockAccountVerifiedByEmailAsync(string userName, string token)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
             Guard.Against.Null(token, null, "Token is not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"User {userName}'s account has been unlocked." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = $"User {userName}'s account has been unlocked." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -829,11 +832,11 @@ namespace ShareMemories.Infrastructure.Services
             return response;
         }
 
-        public async Task<LoginRegisterRefreshResponseDto> UnlockAccountVerifiedByAdminAsync(string userName)
+        public async Task<LoginRegisterRefreshResponseModel> UnlockAccountVerifiedByAdminAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
-            var response = new LoginRegisterRefreshResponseDto() { Message = $"User {userName}'s account has been unlocked." }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = $"User {userName}'s account has been unlocked." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
 
@@ -862,7 +865,7 @@ namespace ShareMemories.Infrastructure.Services
         #endregion
 
         #region Helper Methods
-        private async Task AssignJwtTokensResponse(LoginRegisterRefreshResponseDto response, ExtendIdentityUser? identityUser, IList<string> roles)
+        private async Task AssignJwtTokensResponse(LoginRegisterRefreshResponseModel response, ExtendIdentityUser? identityUser, IList<string> roles)
         {
             response.IsStatus = true;
             response.JwtToken = _jwtTokenService.GenerateJwtToken(identityUser, roles, int.Parse(_config["Jwt:JWT_TOKEN_EXPIRE_MINS"]!));
@@ -895,7 +898,7 @@ namespace ShareMemories.Infrastructure.Services
 
             await SendEmailTaskAsync(identityUser, verificationCode, EmailType.TwoFactorAuthenticationLogin);
         }
-        private void CacheRevokedToken(string jwtToken, LoginRegisterRefreshResponseDto response, ClaimsPrincipal principal)
+        private void CacheRevokedToken(string jwtToken, LoginRegisterRefreshResponseModel response, ClaimsPrincipal principal)
         {
             // store revoked JWT Id in IMemory cache (with sliding timespan)
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -961,13 +964,17 @@ namespace ShareMemories.Infrastructure.Services
             else if (emailType == EmailType.UnlocKAccountRequested)
             {
                 actionLink = $"{domain}{_config["EnvironmentUnlockVerifyApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
-                subject = "Request to unlock your account";
+                subject = "Request To Unlock Your Account";
                 message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, actionLink);
+            }
+            else if (emailType == EmailType.DetailsUpdated)
+            {
+                subject = "User Details Updated";
+                message = string.Format(ApplicationText.UserDetailsUpdatedTemplate, identityUser.FirstName);
             }
 
             await _emailSender.SendEmailAsync(identityUser.Email!, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
         }
-
         private async Task<IList<string>> VerifyUserRolesAsync(ExtendIdentityUser? identityUser)
         {
             // retrieve roles & verify user has at least 1 role - a BadRequest will be thrown in Global Error Handler (middleware)
@@ -975,7 +982,7 @@ namespace ShareMemories.Infrastructure.Services
             Guard.Against.Null(roles.Any() ? (bool?)true : null, null, "No roles associated with user - contact Administration.");
             return roles;
         }
-        private void UpdateResponseTokens(LoginRegisterRefreshResponseDto clientResponse)
+        private void UpdateResponseTokens(LoginRegisterRefreshResponseModel clientResponse)
         {
             // reset the cookies in the response
             CookieOptions cookieOptionsJWT, cookieOptionsRefreshJWT;

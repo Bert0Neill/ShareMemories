@@ -37,6 +37,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ShareMemories.Application\ShareMemories.Application.csproj" />
     <ProjectReference Include="..\ShareMemories.Infrastructure\ShareMemories.Infrastructure.csproj" />
+    <ProjectReference Include="..\ShareMemories.SharedDto\ShareMemories.SharedDto.csproj" />
   </ItemGroup>
 
 </Project>

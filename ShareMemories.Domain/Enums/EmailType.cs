@@ -15,5 +15,6 @@ namespace ShareMemories.Domain.Enums
         TwoFactorAuthenticationDisabled,
         UnlocKAccountRequested,
         UnlocKAccount,
+        DetailsUpdated
     }
 }
