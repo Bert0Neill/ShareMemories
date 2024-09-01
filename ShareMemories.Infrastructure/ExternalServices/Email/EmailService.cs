@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ShareMemories.Infrastructure.Interfaces;
+using System.Net.Mail;
 
 namespace ShareMemories.Infrastructure.ExternalServices.Email
 {
@@ -29,7 +30,7 @@ namespace ShareMemories.Infrastructure.ExternalServices.Email
                 To = toEmail,
                 Send = true,
                 Subject = subject,
-                Text = message
+                Html = message
             });
 
             _logger.LogInformation($"{toEmail} was emailed at {response.Received}");

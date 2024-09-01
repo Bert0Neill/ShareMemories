@@ -61,20 +61,12 @@ namespace ShareMemories.Application.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hello {0}
-        ///
-        ///Thank you for registering. 
-        ///
-        ///Please confirm your email address by clicking the Swagger API link &quot;/loginGroup/ConfirmRegisteredEmailAsync&quot; and enter your Usrname and the token below:
-        ///
-        ///NB: Normally you will have a link here to bring you to the verification page to enter the Username &amp; Token.
-        ///     
-        ///Token: {1}
-        ///
-        ///If you did not register for this site, please ignore this email.
-        ///
-        ///Thanking you
-        ///O&apos;Neill Says!.
+        ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt;
+        ///&lt;p&gt;Thank you for registering.&lt;/p&gt;
+        ///&lt;p&gt;Please confirm your email address by clicking the link below:&lt;/p&gt;
+        ///&lt;p&gt;&lt;a href=&apos;{1}&apos;&gt;Confirm Registration Email&lt;/a&gt;&lt;/p&gt;
+        ///&lt;p&gt;If you did not register for this site, please ignore this email.&lt;/p&gt;
+        ///&lt;p&gt;Thanking you,&lt;br/&gt;O&apos;Neill Says!&lt;/p&gt;.
         /// </summary>
         internal static string ConfirmEmailTemplate {
             get {
@@ -156,18 +148,12 @@ namespace ShareMemories.Application.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hello {0}
-        ///
-        ///We received a request to unlock your account.
-        ///
-        ///Click on the Swagger API &quot;/lockoutGroup/UnlockRequestVerifiedByEmailAsync&quot; and enter your username and the unlock  code below:
-        ///
-        ///Unlock : {1}
-        ///
-        ///If you did not make request a request to unlock your account, please ignore this email and contact Administration - Support@MyDomain.Com
-        ///
-        /// Thanking you
-        /// O&apos;Neill Says!.
+        ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt;
+        ///&lt;p&gt;We received a request to unlock your account.&lt;/p&gt;
+        ///&lt;p&gt;Unlock your account by clicking the link below:&lt;/p&gt;
+        ///&lt;p&gt;&lt;a href=&apos;{1}&apos;&gt;Unlock My Account&lt;/a&gt;&lt;/p&gt;
+        ///&lt;p&gt;If you did not make request a request to unlock your account, please ignore this email and contact Administration - Support@MyDomain.Com&lt;/p&gt;
+        ///&lt;p&gt;Thanking you,&lt;br/&gt;O&apos;Neill Says!&lt;/p&gt;.
         /// </summary>
         internal static string UnlockAccountTemplate {
             get {

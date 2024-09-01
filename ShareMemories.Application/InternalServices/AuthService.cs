@@ -930,13 +930,13 @@ namespace ShareMemories.Infrastructure.Services
             if (emailType == EmailType.ConfirmationEmail)
             {
                 // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!
-                token = Uri.EscapeDataString(verificationCode);
+                actionLink = $"{domain}{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
                 subject = "Confirmation Email";
-                message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, token);
+                message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, actionLink);
             }
             else if (emailType == EmailType.PasswordReset)
             {
-                // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!
+                // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!                
                 token = Uri.EscapeDataString(verificationCode);
                 subject = "Password Reset Request";
                 message = string.Format(ApplicationText.ResetPasswordTemplate, identityUser.FirstName, token);                
@@ -960,14 +960,14 @@ namespace ShareMemories.Infrastructure.Services
             }
             else if (emailType == EmailType.UnlocKAccountRequested)
             {
-                token = verificationCode;
+                actionLink = $"{domain}{_config["EnvironmentUnlockVerifyApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
                 subject = "Request to unlock your account";
-                message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, token);
+                message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, actionLink);
             }
 
             await _emailSender.SendEmailAsync(identityUser.Email!, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
         }
-        
+
         private async Task<IList<string>> VerifyUserRolesAsync(ExtendIdentityUser? identityUser)
         {
             // retrieve roles & verify user has at least 1 role - a BadRequest will be thrown in Global Error Handler (middleware)

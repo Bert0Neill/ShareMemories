@@ -36,7 +36,7 @@ namespace ShareMemories.API.Endpoints.Auth
             *         Verify email link to unlock account (user will have gotten an email to verify)              *
             *******************************************************************************************************/
 
-            lockoutGroup.MapPost("/UnlockRequestVerifiedByEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, IAuthService authService) =>
+            lockoutGroup.MapGet("/UnlockRequestVerifiedByEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(token, "Token is missing");

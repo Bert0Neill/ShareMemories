@@ -105,7 +105,7 @@ namespace ShareMemories.API.Endpoints.Auth
             /*******************************************************************************************************
              *      Allow user to confirm their registered email address, stop fraud and bogus accounts            *
              *******************************************************************************************************/
-            loginRegisterGroup.MapPost("/ConfirmRegisteredEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string token) =>
+            loginRegisterGroup.MapGet("/ConfirmRegisteredEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (IAuthService authService, string userName, string token) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
                 Guard.Against.Empty(token, "Confirm token is missing");
