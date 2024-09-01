@@ -146,12 +146,21 @@ namespace ShareMemories.Infrastructure.Services
                 return response;                
             }
 
-            await ValidateUserIdentityAsync(user, identityUser); // checks to verify a valid user - a BadRequest is thrown otherwise            
+            // Check if the account is locked out
+            if (await _userManager.IsLockedOutAsync(identityUser))
+            {
+                response.Message = $"Account is locked. Please wait {_identityOptions.Value.Lockout.DefaultLockoutTimeSpan.TotalMinutes} minutes before trying again.";
+                return response;
+            }
+
             IList<string> roles = await VerifyUserRolesAsync(identityUser); // retrieve their roles (at least 1 must exist)
 
             // try to sign the user in
             await _signInManager.SignOutAsync();
-            SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser!, user.Password, false, true);
+
+            // Attempt to sign the user in
+            SignInResult loginResult = await _signInManager.PasswordSignInAsync(identityUser, user.Password, user.IsPersistent, lockoutOnFailure: true);
+
 
             if (loginResult.IsLockedOut || loginResult.IsNotAllowed)
             {
@@ -177,6 +186,10 @@ namespace ShareMemories.Infrastructure.Services
                     await _signInManager.SignInAsync(identityUser, authProperties);
                 }                
                 await AssignJwtTokensResponse(response, identityUser, roles); // create JWT bearer
+            }
+            else // failed to login
+            {                
+                response.Message = "Invalid login attempt. Please check your username and password.";
             }
 
             return response;
@@ -878,7 +891,6 @@ namespace ShareMemories.Infrastructure.Services
         }
         private async Task SendTwoFactorAuthenticationAsync(ExtendIdentityUser identityUser)
         {
-            //var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, "Email");
             var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider);            
 
             await SendEmailTaskAsync(identityUser, verificationCode, EmailType.TwoFactorAuthenticationLogin);
@@ -948,7 +960,6 @@ namespace ShareMemories.Infrastructure.Services
             }
             else if (emailType == EmailType.UnlocKAccountRequested)
             {
-                //token = Uri.EscapeDataString(verificationCode);
                 token = verificationCode;
                 subject = "Request to unlock your account";
                 message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, token);
@@ -956,14 +967,7 @@ namespace ShareMemories.Infrastructure.Services
 
             await _emailSender.SendEmailAsync(identityUser.Email!, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
         }
-        private async Task ValidateUserIdentityAsync(LoginUserDto user, ExtendIdentityUser? identityUser)
-        {
-            // verify user exists - a BadRequest will be thrown in Global Error Handler (middleware)
-            Guard.Against.Null(identityUser, null, "User credentials not valid");
-
-            // verify user's password matches that in the Identity table - a BadRequest will be thrown in Global Error Handler (middleware)
-            Guard.Against.Null(await _userManager.CheckPasswordAsync(identityUser, user.Password) ? (bool?)true : null, null, "Invalid credentials entered, please try again.");
-        }
+        
         private async Task<IList<string>> VerifyUserRolesAsync(ExtendIdentityUser? identityUser)
         {
             // retrieve roles & verify user has at least 1 role - a BadRequest will be thrown in Global Error Handler (middleware)

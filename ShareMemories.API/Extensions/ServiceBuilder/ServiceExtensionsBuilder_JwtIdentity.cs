@@ -84,7 +84,7 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 // Lockout settings.
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(lockoutLifeSpanMinutes);
                 options.Lockout.MaxFailedAccessAttempts = lockoutAttempts;
-                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.AllowedForNewUsers = true;                
 
                 // User settings.
                 options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
