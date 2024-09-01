@@ -127,8 +127,9 @@ namespace ShareMemories.Infrastructure.Services
 
         public async Task<LoginRegisterRefreshResponseModel> LoginAsync(LoginUserModel user)
         {
-            Guard.Against.Null(user, null, "User credentials are not valid");   
+            Guard.Against.Null(user, null, "User credentials are not valid");
 
+            int rememberMeExpireDays = int.Parse(_config.GetSection("SystemDefaults:RememberMeLifeSpan").Value!);
             var response = new LoginRegisterRefreshResponseModel(); // "IsStatus" will be false by default
             var identityUser = await _userManager.FindByNameAsync(user.UserName);
 
@@ -178,7 +179,7 @@ namespace ShareMemories.Infrastructure.Services
                     var authProperties = new AuthenticationProperties
                     {
                         IsPersistent = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.AddDays(int.Parse(_config.GetSection("SystemDefaults:RememberMeLifeSpan").Value!)) // Set expiration to days
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddDays(rememberMeExpireDays) // Set expiration to days
                     };                 
 
                     // sign-in again with extended duration
@@ -292,8 +293,7 @@ namespace ShareMemories.Infrastructure.Services
 
             return response;
         }
-
-        //public async Task<LoginRegisterRefreshResponseModel> UpdateUserDetailsAsync(string jwtToken, UpdateUserDetailsDto userUpdateDetails)
+        
         public async Task<LoginRegisterRefreshResponseModel> UpdateUserDetailsAsync(string jwtToken, RegisterUserModel userUpdateDetails)
         {
             Guard.Against.Null(userUpdateDetails, null, "User details are not valid");
