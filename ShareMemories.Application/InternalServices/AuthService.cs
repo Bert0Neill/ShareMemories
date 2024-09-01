@@ -231,7 +231,7 @@ namespace ShareMemories.Infrastructure.Services
                 else
                 {
                     // remove cookies form response to client
-                    await _signInManager.SignOutAsync();
+                    await _signInManager.SignOutAsync(); // this will clear the "AspNetCore.Identity.Application" IsPersistent cookie
                     _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtToken");
                     _httpContextAccessor.HttpContext?.Response.Cookies.Delete("jwtRefreshToken");
                 }
