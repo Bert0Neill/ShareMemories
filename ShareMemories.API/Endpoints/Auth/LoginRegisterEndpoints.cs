@@ -146,7 +146,7 @@ namespace ShareMemories.API.Endpoints.Auth
             });
 
             /*******************************************************************************************************
-             *              Update User's details (Name, email, phone number for e.g.)               *
+             *                      Update User's details (Name, email, phone number for e.g.)                     *
              *******************************************************************************************************/
             loginRegisterGroup.MapPut("/UpdateUserDetailsAsync", async Task<Results<Ok<string>, NotFound<string>>> (HttpContext context, UpdateUserDetailsDto userUpdateDetails, IAuthService authService) =>
             {
@@ -168,7 +168,7 @@ namespace ShareMemories.API.Endpoints.Auth
             });
 
             /*******************************************************************************************************
-            *                       View User's details (Name, email, phone number for e.g.)                       *
+            *                     View a User's details (Name, email, phone number for e.g.)                       *
             *******************************************************************************************************/
             loginRegisterGroup.MapGet("/ViewUserDetailsAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {

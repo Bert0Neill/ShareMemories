@@ -11,9 +11,9 @@ namespace ShareMemories.API.Endpoints.Auth
         {
             var lockoutGroup = routes.MapGroup("lockoutGroup").WithOpenApi();
 
-            /******************************************************************************************************
-            *            User request's their account to be unlocked (email conformation sent)                    *
-            *******************************************************************************************************/
+            /**********************************************************************************************************
+            *  User request's their account to be unlocked (email conformation sent) - user has no JWT at this stage  *
+            ***********************************************************************************************************/
             lockoutGroup.MapPost("/UnlockRequestAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
@@ -32,9 +32,9 @@ namespace ShareMemories.API.Endpoints.Auth
                 Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Lockout - API Library" } }
             });
 
-            /******************************************************************************************************
-            *         Verify email link to unlock account (user will have gotten an email to verify)              *
-            *******************************************************************************************************/
+            /******************************************************************************************************************
+            * Verify email link to unlock account (user will have gotten an email to verify) - user has no JWT at this stage  *
+            *******************************************************************************************************************/
 
             lockoutGroup.MapGet("/UnlockRequestVerifiedByEmailAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, string token, IAuthService authService) =>
             {

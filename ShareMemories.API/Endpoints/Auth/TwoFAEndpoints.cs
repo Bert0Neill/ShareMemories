@@ -1,12 +1,6 @@
 ﻿using Ardalis.GuardClauses;
-using AutoMapper;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.OpenApi.Models;
-using ShareMemories.API.Validators;
-using ShareMemories.Domain.DTOs;
-using ShareMemories.Domain.Models;
 using ShareMemories.Infrastructure.Interfaces;
 
 namespace ShareMemories.API.Endpoints.Auth
