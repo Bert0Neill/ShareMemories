@@ -40,9 +40,7 @@ namespace ShareMemories.API.Extensions.AppBuilder
 
         public static void ConfigureEndpoints(this WebApplication app)
         {
-            // Register Minimal API Endpoints
-            app.MapPictureEndpoints();
-            app.MapVideoEndpoints();
+            // Register Minimal API Endpoints            
             //app.MapAuthEndpoints();
             app.MapAdminEndpoints();
             app.MapLockoutEndpoints();
@@ -50,6 +48,9 @@ namespace ShareMemories.API.Extensions.AppBuilder
             app.MapPasswordEndpoints();
             app.MapTokenEndpoints();
             app.MapTwoFAEndpoints();
+
+            app.MapPictureEndpoints();
+            app.MapVideoEndpoints();
         }
     }
 }

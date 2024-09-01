@@ -60,7 +60,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
                 else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
-            .WithName("Revoke")
+            .WithName("RevokeAsync")
             .RequireAuthorization()
             .WithMetadata(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme })
             .WithOpenApi(x => new OpenApiOperation(x)

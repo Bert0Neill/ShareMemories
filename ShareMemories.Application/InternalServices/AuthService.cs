@@ -725,6 +725,8 @@ namespace ShareMemories.Infrastructure.Services
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
 
+            int adminLockoutDuration = int.Parse(_config.GetSection("SystemDefaults:AdminLocksAccountLifeSpan").Value); // locked for days
+
             var response = new LoginRegisterRefreshResponseDto() { Message = $"User {userName}'s account has been locked." }; // default message
 
             var identityUser = await _userManager.FindByNameAsync(userName);
@@ -733,7 +735,7 @@ namespace ShareMemories.Infrastructure.Services
             else
             {
                 // lock user's account for a longer period (appsetting value in days - user can request unlock email)
-                var result = await _userManager.SetLockoutEndDateAsync(identityUser, DateTimeOffset.UtcNow.AddDays(int.Parse(_config.GetSection("SystemDefaults:AdminLocksAccountLifeSpan").Value!)));
+                var result = await _userManager.SetLockoutEndDateAsync(identityUser, DateTimeOffset.UtcNow.AddDays(adminLockoutDuration));
 
                 if (!result.Succeeded)
                 {
@@ -762,7 +764,9 @@ namespace ShareMemories.Infrastructure.Services
             if (identityUser == null) response.Message = "An invalid email or the email is not register to your account";
             else
             {
+                // Generate an unlock token for the user
                 var unlockToken = await _userManager.GenerateUserTokenAsync(identityUser, TokenOptions.DefaultProvider, TokenOptions.DefaultEmailProvider);
+                
                 await SendEmailTaskAsync(identityUser, unlockToken, EmailType.UnlocKAccountRequested);
                 response.IsStatus = true; // double up for validating password sent successfully
             }
@@ -874,9 +878,8 @@ namespace ShareMemories.Infrastructure.Services
         }
         private async Task SendTwoFactorAuthenticationAsync(ExtendIdentityUser identityUser)
         {
-            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, "Email");
-            //var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider);
             //var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, "Email");
+            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider);            
 
             await SendEmailTaskAsync(identityUser, verificationCode, EmailType.TwoFactorAuthenticationLogin);
         }
@@ -915,8 +918,6 @@ namespace ShareMemories.Infrastructure.Services
             if (emailType == EmailType.ConfirmationEmail)
             {
                 // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!
-                //actionLink = $"{domain}{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
-
                 token = Uri.EscapeDataString(verificationCode);
                 subject = "Confirmation Email";
                 message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, token);
@@ -924,8 +925,6 @@ namespace ShareMemories.Infrastructure.Services
             else if (emailType == EmailType.PasswordReset)
             {
                 // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!
-                //actionLink = $"{domain}{_config["EnvironmentResetPasswordApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
-
                 token = Uri.EscapeDataString(verificationCode);
                 subject = "Password Reset Request";
                 message = string.Format(ApplicationText.ResetPasswordTemplate, identityUser.FirstName, token);                
@@ -933,7 +932,6 @@ namespace ShareMemories.Infrastructure.Services
             else if (emailType == EmailType.TwoFactorAuthenticationLogin)
             {
                 // because of CORS security, you can't use a GET URL within an email to redirect the user to a code entry page. Thus, the user gets an email with the code but must use a page within the domain to enter the code!
-                //actionLink = $"{domain}{_config["Environment2faApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
                 token = Uri.EscapeDataString(verificationCode);
                 subject = "2 Factor Authentication - Login";
                 message = string.Format(ApplicationText.TwoFactorAuthenticationTemplate, identityUser.FirstName, token); 
@@ -950,9 +948,10 @@ namespace ShareMemories.Infrastructure.Services
             }
             else if (emailType == EmailType.UnlocKAccountRequested)
             {
-                actionLink = $"{domain}{_config["EnvironmentUnlockVerifyApiUrl"]}{identityUser.UserName}&code={Uri.EscapeDataString(verificationCode)}";
-                subject = "2 Factor Authentication - Disabled";
-                message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, actionLink);
+                //token = Uri.EscapeDataString(verificationCode);
+                token = verificationCode;
+                subject = "Request to unlock your account";
+                message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, token);
             }
 
             await _emailSender.SendEmailAsync(identityUser.Email!, subject, message); // replace ToEmail with your company or private GMail or Yahoo account

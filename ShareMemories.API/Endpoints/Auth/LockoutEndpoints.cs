@@ -24,7 +24,7 @@ namespace ShareMemories.API.Endpoints.Auth
                 if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
                 else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
             })
-            .WithName("Unlock Request")
+            .WithName("UnlockRequestAsync")
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "User request to unlock their account",
@@ -46,8 +46,8 @@ namespace ShareMemories.API.Endpoints.Auth
                 // was the email confirmation sent successfully
                 if (!loginRegisterRefreshResponseDto.IsStatus) return TypedResults.NotFound(loginRegisterRefreshResponseDto.Message);
                 else return TypedResults.Ok(loginRegisterRefreshResponseDto.Message);
-            })
-            .WithName("Unlock Request Verified By Email")
+            })                
+            .WithName("UnlockRequestVerifiedByEmailAsync")
             .WithOpenApi(x => new OpenApiOperation(x)
             {
                 Summary = "Unlock a user's account",

@@ -158,11 +158,13 @@ namespace ShareMemories.Application.Resources {
         /// <summary>
         ///   Looks up a localized string similar to Hello {0}
         ///
-        /// We received a request to unlock your account. Click the link below to reset it:
-        /// 
-        /// Unlock account link: {1}
+        ///We received a request to unlock your account.
         ///
-        /// If you did not make request a request to unlock your account, please ignore this email and contact Administration - Support@MyDomain.Com
+        ///Click on the Swagger API &quot;/lockoutGroup/UnlockRequestVerifiedByEmailAsync&quot; and enter your username and the unlock  code below:
+        ///
+        ///Unlock : {1}
+        ///
+        ///If you did not make request a request to unlock your account, please ignore this email and contact Administration - Support@MyDomain.Com
         ///
         /// Thanking you
         /// O&apos;Neill Says!.
