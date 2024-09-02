@@ -919,62 +919,7 @@ namespace ShareMemories.Infrastructure.Services
 
                 _logger.LogInformation($"JWT Bearer {jti} was revoked by user {principal.Identity.Name}. Currently {expiration} left before expires");
             }
-        }
-        private async Task SendEmailTaskAsync(ExtendIdentityUser identityUser, string verificationCode, EmailType emailType)
-        {
-            string subject = string.Empty;
-            string message = string.Empty;
-            string actionLink = string.Empty;
-            string token = string.Empty;
-
-            // build up domain\host URL to append confirmation links too
-            var domain = $"{_httpContextAccessor.HttpContext?.Request.Scheme}://{_httpContextAccessor.HttpContext?.Request.Host}";
-
-            if (emailType == EmailType.ConfirmationEmail)
-            {
-                // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!
-                actionLink = $"{domain}{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
-                subject = "Confirmation Email";
-                message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, actionLink);
-            }
-            else if (emailType == EmailType.PasswordReset)
-            {
-                // to use a link in an email to verify the user - the API will need to be a GET, as you will be using the URL to pass parameters - a little unsecure approach - best to redirect user to input screen with a link in the email - allow them to enter the token and username manually!                
-                token = Uri.EscapeDataString(verificationCode);
-                subject = "Password Reset Request";
-                message = string.Format(ApplicationText.ResetPasswordTemplate, identityUser.FirstName, token);                
-            }
-            else if (emailType == EmailType.TwoFactorAuthenticationLogin)
-            {
-                // because of CORS security, you can't use a GET URL within an email to redirect the user to a code entry page. Thus, the user gets an email with the code but must use a page within the domain to enter the code!
-                token = Uri.EscapeDataString(verificationCode);
-                subject = "2 Factor Authentication - Login";
-                message = string.Format(ApplicationText.TwoFactorAuthenticationTemplate, identityUser.FirstName, token); 
-            }
-            else if (emailType == EmailType.TwoFactorAuthenticationEnabled)
-            {
-                subject = "2 Factor Authentication - Enabled";
-                message = string.Format(ApplicationText.EnableTwoFactorAuthenticationTemplate, identityUser.FirstName, string.Empty);
-            }
-            else if (emailType == EmailType.TwoFactorAuthenticationDisabled)
-            {
-                subject = "2 Factor Authentication - Disabled";
-                message = string.Format(ApplicationText.DisableTwoFactorAuthenticationTemplate, identityUser.FirstName, string.Empty);
-            }
-            else if (emailType == EmailType.UnlocKAccountRequested)
-            {
-                actionLink = $"{domain}{_config["EnvironmentUnlockVerifyApiUrl"]}{identityUser.UserName}&token={Uri.EscapeDataString(verificationCode)}";
-                subject = "Request To Unlock Your Account";
-                message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, actionLink);
-            }
-            else if (emailType == EmailType.DetailsUpdated)
-            {
-                subject = "User Details Updated";
-                message = string.Format(ApplicationText.UserDetailsUpdatedTemplate, identityUser.FirstName);
-            }
-
-            await _emailSender.SendEmailAsync(identityUser.Email!, subject, message); // replace ToEmail with your company or private GMail or Yahoo account
-        }
+        }        
         private async Task<IList<string>> VerifyUserRolesAsync(ExtendIdentityUser? identityUser)
         {
             // retrieve roles & verify user has at least 1 role - a BadRequest will be thrown in Global Error Handler (middleware)
@@ -1027,7 +972,58 @@ namespace ShareMemories.Infrastructure.Services
             var emailExists = emailTask != null;
 
             return usernameExists || emailExists;
-        }        
+        }
+        private async Task SendEmailTaskAsync(ExtendIdentityUser identityUser, string verificationCode, EmailType emailType)
+        {
+            string subject = string.Empty;
+            string message = string.Empty;
+            string actionLink = string.Empty;
+            string token = Uri.EscapeDataString(verificationCode);
+            string domain = $"{_httpContextAccessor.HttpContext?.Request.Scheme}://{_httpContextAccessor.HttpContext?.Request.Host}";
+
+            switch (emailType)
+            {
+                case EmailType.ConfirmationEmail:
+                    actionLink = $"{domain}{_config["EnvironmentConfirmApiUrl"]}{identityUser.UserName}&token={token}";
+                    subject = "Confirmation Email";
+                    message = string.Format(ApplicationText.ConfirmEmailTemplate, identityUser.FirstName, actionLink);
+                    break;
+
+                case EmailType.PasswordReset:
+                    subject = "Password Reset Request";
+                    message = string.Format(ApplicationText.ResetPasswordTemplate, identityUser.FirstName, token);
+                    break;
+
+                case EmailType.TwoFactorAuthenticationLogin:
+                    subject = "2 Factor Authentication - Login";
+                    message = string.Format(ApplicationText.TwoFactorAuthenticationTemplate, identityUser.FirstName, token);
+                    break;
+
+                case EmailType.TwoFactorAuthenticationEnabled:
+                    subject = "2 Factor Authentication - Enabled";
+                    message = string.Format(ApplicationText.EnableTwoFactorAuthenticationTemplate, identityUser.FirstName, string.Empty);
+                    break;
+
+                case EmailType.TwoFactorAuthenticationDisabled:
+                    subject = "2 Factor Authentication - Disabled";
+                    message = string.Format(ApplicationText.DisableTwoFactorAuthenticationTemplate, identityUser.FirstName, string.Empty);
+                    break;
+
+                case EmailType.UnlocKAccountRequested:
+                    actionLink = $"{domain}{_config["EnvironmentUnlockVerifyApiUrl"]}{identityUser.UserName}&token={token}";
+                    subject = "Request To Unlock Your Account";
+                    message = string.Format(ApplicationText.UnlockAccountTemplate, identityUser.FirstName, actionLink);
+                    break;
+
+                case EmailType.DetailsUpdated:
+                    subject = "User Details Updated";
+                    message = string.Format(ApplicationText.UserDetailsUpdatedTemplate, identityUser.FirstName);
+                    break;
+            }
+
+            await _emailSender.SendEmailAsync(identityUser.Email!, subject, message);
+        }
+
 
         #endregion
     }
