@@ -17,7 +17,7 @@ namespace ShareMemories.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.7")
+                .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -270,8 +270,8 @@ namespace ShareMemories.Infrastructure.Migrations
                             Id = "43a8cbb1-4e09-41de-9281-679f8ee3703a",
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "68f8a171-8d55-4196-8bff-8dbb76237385",
-                            CreatedDate = new DateTime(2024, 8, 12, 9, 21, 29, 472, DateTimeKind.Local).AddTicks(4896),
-                            DateOfBirth = new DateOnly(2024, 8, 12),
+                            CreatedDate = new DateTime(2024, 9, 3, 13, 39, 34, 478, DateTimeKind.Local).AddTicks(4210),
+                            DateOfBirth = new DateOnly(2024, 9, 3),
                             Email = "user@example.com",
                             EmailConfirmed = false,
                             FirstName = "Jane",
@@ -291,8 +291,8 @@ namespace ShareMemories.Infrastructure.Migrations
                             Id = "af327f76-e5c4-43a4-8590-e8bd355003f2",
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "c772f240-6771-4ef5-b7a8-6c316ab651ad",
-                            CreatedDate = new DateTime(2024, 8, 12, 9, 21, 29, 472, DateTimeKind.Local).AddTicks(4993),
-                            DateOfBirth = new DateOnly(2024, 8, 12),
+                            CreatedDate = new DateTime(2024, 9, 3, 13, 39, 34, 478, DateTimeKind.Local).AddTicks(4290),
+                            DateOfBirth = new DateOnly(2024, 9, 3),
                             Email = "user@example6.com",
                             EmailConfirmed = false,
                             FirstName = "Joe",
@@ -460,6 +460,9 @@ namespace ShareMemories.Infrastructure.Migrations
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
+
+                    b.Property<byte[]>("VideoBytes")
+                        .HasColumnType("varbinary(max)");
 
                     b.HasKey("Id");
 

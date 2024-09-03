@@ -26,7 +26,7 @@ try
     app.Run();
 }
 catch (Exception exception)
-{        
+{
     Log.Logger.Error(exception,"Stopped program because of exception");
     throw;
 }
