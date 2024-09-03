@@ -125,9 +125,6 @@ namespace ShareMemories.API.Extensions.ServiceBuilder
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             });
 
-
-
-
             services.AddAuthorization();
         }
     }

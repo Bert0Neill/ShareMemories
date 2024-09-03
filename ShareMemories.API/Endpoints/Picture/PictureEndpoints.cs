@@ -40,10 +40,9 @@ namespace ShareMemories.API.Endpoints.Picture
                   Description = "Returns information about a selected picture from the user's library.",
                   Tags = new List<OpenApiTag> { new() { Name = "Pictures API Library" } }
               })
-              .CacheOutput(x => x.Tag("PictureById"));
-              //.RequireCors("AllowSpecificOrigins");
-              // invalidate data when new record added, by using tag in Post API    
-            
+              .CacheOutput(x => x.Tag("PictureById")); // invalidate data when new record added, by using tag in Post API    
+              //.RequireCors("AllowSpecificOrigins"); // apply to individual API's or use global 'app.UseCors("AllowSpecificOrigins");' in programs.cs
+
 
             group.MapPost("/InsertPictureAsync", async (HttpContext context, ShareMemories.Domain.Entities.Picture picture, IPictureService pictureService) =>
             {

@@ -35,13 +35,11 @@ namespace ShareMemories.API.Extensions.AppBuilder
             // apply security middleware
             app.UseAuthentication(); // Authenticate the token
             app.UseAuthorization();  // Authorize based on roles/policies
-
         }
 
         public static void ConfigureEndpoints(this WebApplication app)
         {
             // Register Minimal API Endpoints            
-            //app.MapAuthEndpoints();
             app.MapAdminEndpoints();
             app.MapLockoutEndpoints();
             app.MapLoginRegisterEndpoints();
