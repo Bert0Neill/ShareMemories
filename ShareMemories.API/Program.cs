@@ -11,7 +11,7 @@ try
     builder.Services.AddServicesLogging(builder); // create logger        
     builder.Services.AddCORsServices(builder.Configuration); // CORs service - restrict Cross Origin Requests to your API's (I'm applying tpo all API's, but you can be more granular)
     builder.Services.AddServicesInitialSetup(builder.Configuration); // DI, Caching, DbContext, DTO validation
-    builder.Services.AddServicesJwtIdentity(builder.Configuration); // configure JWT, Policys etc.
+    builder.Services.AddServicesJwtIdentity(builder.Configuration); // configure JWT, Policies etc.
     builder.Services.AddCustomServicesSwagger(builder.Configuration); // configure Swagger for JWT Bearer testing
 
     var app = builder.Build();

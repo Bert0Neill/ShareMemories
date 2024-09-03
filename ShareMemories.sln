@@ -60,8 +60,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{
 		Codeproject - Complete Guide To Using .Net Identity API's.docx = Codeproject - Complete Guide To Using .Net Identity API's.docx
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShareMemories.2FA", "ShareMemories.2FA\ShareMemories.2FA.csproj", "{1176C3AE-9458-4FDB-B64B-FA9382D60A0B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -96,10 +94,6 @@ Global
 		{939C5DAE-E621-40DB-B595-52006AAE880A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{939C5DAE-E621-40DB-B595-52006AAE880A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{939C5DAE-E621-40DB-B595-52006AAE880A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1176C3AE-9458-4FDB-B64B-FA9382D60A0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1176C3AE-9458-4FDB-B64B-FA9382D60A0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1176C3AE-9458-4FDB-B64B-FA9382D60A0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1176C3AE-9458-4FDB-B64B-FA9382D60A0B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -120,7 +114,6 @@ Global
 		{4570CBF4-4C79-4A4B-8F2A-8DDDEA7C685C} = {E4C380F1-10FC-4387-84DF-B4703AA4E6BF}
 		{939C5DAE-E621-40DB-B595-52006AAE880A} = {A5F850C7-B1FC-43B4-AA93-6792A4E6D5F6}
 		{F28E2AF3-A1A7-49B2-BFB6-91AB2F5B5CD0} = {E4C380F1-10FC-4387-84DF-B4703AA4E6BF}
-		{1176C3AE-9458-4FDB-B64B-FA9382D60A0B} = {AAF147C2-2D16-4534-AC9C-52940210CB67}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B6D2A769-3220-41F8-BDC6-26458765B5A8}
