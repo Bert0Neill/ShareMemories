@@ -12,5 +12,4 @@ namespace ShareMemories.API.Mappers
             CreateMap<RegisterUserDto, RegisterUserModel>();
         }
     }
-
 }

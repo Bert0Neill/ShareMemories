@@ -169,6 +169,7 @@ namespace ShareMemories.Infrastructure.Services
             else if (loginResult.RequiresTwoFactor) // valid user at this stage - determine if 2FA is enabled and halt login- send 2fa email
             {
                 await SendTwoFactorAuthenticationAsync(identityUser!);
+                response.IsStatus = true; // this is a valid workflow - user just needs to verify their 2FA code
                 response.Message = "Two-factor authentication is enabled on your account. You have been sent an email with a OTP, click on the Swagger API '/2FAGroup/Verify2FactorAuthenticationAsync' and enter your username and the code supplied to complete your login.";
             }
             else if (loginResult.Succeeded)

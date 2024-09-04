@@ -75,16 +75,15 @@ namespace ShareMemories.Application.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hello {0}
+        ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt;
         ///
-        ///Your 2FA by email has now been disabled. 
+        ///&lt;p&gt;Your 2FA by email has now been disabled.&lt;/p&gt;
         ///
-        ///If you have any questions contact our administration team at the email address below.
+        ///&lt;p&gt;If you have any questions contact our administration team at the email address below.&lt;/p&gt;
         ///
-        ///Administration Email: Support@MyDomain.Com
+        ///&lt;p&gt;Administration Email: Support@MyDomain.Com&lt;/p&gt;
         ///
-        ///Thanking you
-        ///O&apos;Neill Says!.
+        ///&lt;p&gt;Thanking you,&lt;br/&gt;O&apos;Neill Says!&lt;/p&gt;.
         /// </summary>
         internal static string DisableTwoFactorAuthenticationTemplate {
             get {
@@ -93,16 +92,15 @@ namespace ShareMemories.Application.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hello {0}
+        ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt;
         ///
-        ///You are now enabled for 2FA by email, this is to re-enforce our security policy and for your protection online. 
+        ///&lt;p&gt;You are now enabled for 2FA by email, this is to re-enforce our security policy and for your protection online.&lt;/p&gt;
         ///
-        ///If you have any questions contact our administration team at the email address below.
+        ///&lt;p&gt;If you have any questions contact our administration team at the email address below.&lt;/p&gt;
         ///
-        ///Administration Email: Support@MyDomain.Com
+        ///&lt;p&gt;Administration Email: Support@MyDomain.Com&lt;/p&gt;
         ///
-        ///Thanking you
-        ///O&apos;Neill Says!.
+        ///&lt;p&gt;Thanking you,&lt;br/&gt;O&apos;Neill Says!&lt;/p&gt;.
         /// </summary>
         internal static string EnableTwoFactorAuthenticationTemplate {
             get {
@@ -133,13 +131,13 @@ namespace ShareMemories.Application.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hello {0}
+        ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt; 
         ///
-        ///You have received this 2FA email, as somebody is trying to log into your account. 
+        ///&lt;p&gt;You have received this 2FA email, as somebody is trying to log into your account.&lt;/p&gt; 
         ///
-        ///Please confirm that this is you, by clicking the Swagger API link &quot;/2FAGroup/Verify2FactorAuthenticationAsync&quot; and enter your Username and the 2FA Code below:
+        ///&lt;p&gt;Please confirm that this is you, by clicking the Swagger API link &quot;/2FAGroup/Verify2FactorAuthenticationAsync&quot; and enter your Username and the 2FA Code below:&lt;/p&gt;
         ///
-        ///NB: Normally once you have attempted to login, a new page will be displayed to enter the 2FA code - which is from the same domain (a link from an email will not pass CORS security) - this is why you see the likes of eBay etc. displaying a page for you [rest of string was truncated]&quot;;.
+        ///&lt;p&gt;NB: Normally once you have attempted to login, a new page will be displayed to enter the 2FA code - which is from the same domain (a link from an email will not pass CORS security) - this is why you see the likes of eBay etc.  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string TwoFactorAuthenticationTemplate {
             get {
