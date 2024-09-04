@@ -409,7 +409,6 @@ namespace ShareMemories.Infrastructure.Services
         /******************************************************
         *               JWT Refresh & Revoke                  *
         *******************************************************/
-
         public async Task<LoginRegisterRefreshResponseModel> RefreshTokenAsync(string jwtToken, string refreshToken)
         {
             var response = new LoginRegisterRefreshResponseModel();
@@ -608,7 +607,6 @@ namespace ShareMemories.Infrastructure.Services
         /******************************************************
         *         Enable & Disable 2FA on account             *
         *******************************************************/
-
         public async Task<LoginRegisterRefreshResponseModel> Enable2FactorAuthenticationForUserAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");
@@ -736,7 +734,6 @@ namespace ShareMemories.Infrastructure.Services
         /******************************************************
         *         Locking & Unlocking an account              *
         *******************************************************/
-
         public async Task<LoginRegisterRefreshResponseModel> LockAccountAsync(string userName)
         {
             Guard.Against.Null(userName, null, "User credentials are not valid");

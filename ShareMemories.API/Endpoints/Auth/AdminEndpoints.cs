@@ -86,7 +86,6 @@ namespace ShareMemories.API.Endpoints.Auth
             /******************************************************************************************************
             *                             Lock a user's account (called by Admin)                               *
             *******************************************************************************************************/
-            //adminGroup.MapPost("/LockAccountAsync/{userName}", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             adminGroup.MapPost("/LockAccountAsync", async Task<Results<Ok<string>, NotFound<string>>> (string userName, IAuthService authService) =>
             {
                 Guard.Against.Empty(userName, "Username is missing");
