@@ -1,0 +1,95 @@
+
+
+{
+  "id": 0,
+  "userId": 0,
+  "friendlyName": "string",
+"picture1": "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",
+  "isArchived": true
+}
+
+
+Login
+
+{
+  "userName": "string4",
+  "password": "String@12345"
+}
+
+{
+  "userName": "string3",
+  "password": "String@12345"
+}
+
+{
+  "userName": "bertoneill",
+  "password": "P@ssw0rd"
+} 
+
+
+Register
+
+
+{
+  "password": "String@12345",
+  "email": "user@example.com",
+  "firstName": "string1",
+  "lastName": "string2",
+  "userName": "string3",
+  "confirmPassword": "String@12345",
+  "dateOfBirth": "1980-10-10"
+}
+
+{
+  "password": "String@12345",
+  "email": "adventure-pine@a3tuvq9f.mailosaur.net",
+  "firstName": "string1",
+  "lastName": "string2",
+  "userName": "string4",
+  "confirmPassword": "String@12345",
+  "dateOfBirth": "1980-10-10"
+}
+
+
+
+{
+  "password": "String@12345",
+  "email": "bertoneill@yahoo.com",
+  "firstName": "Bert",
+  "lastName": "O'Neill",
+  "userName": "bertoneill",
+  "confirmPassword": "String@12345",
+  "dateOfBirth": "1980-10-10"
+}
+
+Upddate password
+https://localhost:7273/auths/VerifyPasswordResetAsync?userName=bertoneill&token=220348&password=String@1234567890
+
+{
+  "userName": "bertoneill",
+  "password": "P@ssw0rd"
+} 
+
+2FA
+Step 3: Add a Method for Enabling 2FA in User Registration (Optional)
+If you want to enable 2FA automatically upon registration or after a certain condition, you can modify the registration process.
+
+Step 4: Testing the API
+You can test these APIs using Postman or any HTTP client. Here's how you might test each endpoint:
+
+Enable 2FA:
+
+Method: POST
+URL: /enable-2fa
+Body: { "userId": "user-id", "code": "generated-code" }
+Generate 2FA Code:
+
+Method: GET
+URL: /generate-2fa-code?userId=user-id
+Verify 2FA Code:
+
+Method: POST
+URL: /verify-2fa
+Body: { "userId": "user-id", "code": "2fa-code" }
+Conclusion
+This is a basic setup for 2FA in a minimal API project using .NET Core Identity. You can expand on this by adding additional security measures, logging, or user feedback mechanisms as needed.
