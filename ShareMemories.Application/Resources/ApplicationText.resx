@@ -194,4 +194,26 @@ NB: Normally you will have a link here to bring you to the verification page to 
 &lt;p&gt;If you did not make a request to update your account, please contact Administration - Support@MyDomain.Com&lt;/p&gt;
 &lt;p&gt;Thanking you,&lt;br/&gt;O'Neill Says!&lt;/p&gt;</value>
   </data>
+  <data name="LockoutTemplate" xml:space="preserve">
+    <value>&lt;p&gt;Hello {0}&lt;/p&gt;
+
+&lt;p&gt;There has been suspicious activity on your account and it has been locked.&lt;/p&gt;
+
+&lt;p&gt;You can request that your account is unlocked by calling the API lockoutGroup/UnlockRequestAsync&lt;/p&gt;
+
+&lt;p&gt;Administration Email: Support@MyDomain.Com&lt;/p&gt;
+
+&lt;p&gt;Thanking you,&lt;br/&gt;O'Neill Says!&lt;/p&gt;</value>
+  </data>
+  <data name="AdminUnlockedTemplate" xml:space="preserve">
+    <value>&lt;p&gt;Hello {0}&lt;/p&gt;
+
+&lt;p&gt;Your account has been unlocked by the Administration team.&lt;/p&gt;
+
+&lt;p&gt;Administration Email: Support@MyDomain.Com&lt;/p&gt;
+
+&lt;p&gt;Thanking you,&lt;br/&gt;O'Neill Says!&lt;/p&gt;
+
+</value>
+  </data>
 </root>

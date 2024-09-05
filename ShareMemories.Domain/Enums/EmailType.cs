@@ -13,6 +13,8 @@ namespace ShareMemories.Domain.Enums
         TwoFactorAuthenticationLogin,
         TwoFactorAuthenticationEnabled,
         TwoFactorAuthenticationDisabled,
+        AccountLocked,
+        AdminUnlockAccount,
         UnlocKAccountRequested,
         UnlocKAccount,
         DetailsUpdated

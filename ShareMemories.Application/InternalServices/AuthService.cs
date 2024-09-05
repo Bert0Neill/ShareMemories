@@ -481,7 +481,7 @@ namespace ShareMemories.Infrastructure.Services
         {
             Guard.Against.Null(jwtToken, null, "Token is not valid");
 
-            var response = new LoginRegisterRefreshResponseModel() { Message = "Successfully revoked JWT token", IsStatus = true }; // default message
+            var response = new LoginRegisterRefreshResponseModel() { Message = "Successfully revoked JWT token. Please login again to generate a new secure JWT", IsStatus = true }; // default message
 
             var claimsPrincipal = _jwtTokenService.GetPrincipalFromExpiredToken(jwtToken);
 
@@ -762,6 +762,9 @@ namespace ShareMemories.Infrastructure.Services
                 else
                 {
                     response.IsStatus = true;
+                    
+                    // send user email to notify them that their account has been locked
+                    await SendEmailTaskAsync(identityUser, string.Empty, EmailType.AccountLocked);
                 }
             }
             return response;
@@ -854,6 +857,9 @@ namespace ShareMemories.Infrastructure.Services
                 else
                 {
                     response.IsStatus = true;
+
+                    // send user email to notify them that their account has been unlocked
+                    await SendEmailTaskAsync(identityUser, string.Empty, EmailType.AdminUnlockAccount);                    
                 }
             }
             return response;
@@ -1016,6 +1022,16 @@ namespace ShareMemories.Infrastructure.Services
                 case EmailType.DetailsUpdated:
                     subject = "User Details Updated";
                     message = string.Format(ApplicationText.UserDetailsUpdatedTemplate, identityUser.FirstName);
+                    break;
+
+                case EmailType.AccountLocked:
+                    subject = "Account Locked";
+                    message = string.Format(ApplicationText.LockoutTemplate, identityUser.FirstName);
+                    break;
+
+                case EmailType.AdminUnlockAccount:
+                    subject = "Account Unlocked";
+                    message = string.Format(ApplicationText.AdminUnlockedTemplate, identityUser.FirstName);
                     break;
             }
 

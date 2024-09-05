@@ -62,6 +62,23 @@ namespace ShareMemories.Application.Resources {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt;
+        ///
+        ///&lt;p&gt;Your account has been unlocked by the Administration team.&lt;/p&gt;
+        ///
+        ///&lt;p&gt;Administration Email: Support@MyDomain.Com&lt;/p&gt;
+        ///
+        ///&lt;p&gt;Thanking you,&lt;br/&gt;O&apos;Neill Says!&lt;/p&gt;
+        ///
+        ///.
+        /// </summary>
+        internal static string AdminUnlockedTemplate {
+            get {
+                return ResourceManager.GetString("AdminUnlockedTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt;
         ///&lt;p&gt;Thank you for registering.&lt;/p&gt;
         ///&lt;p&gt;Please confirm your email address by clicking the link below:&lt;/p&gt;
         ///&lt;p&gt;&lt;a href=&apos;{1}&apos;&gt;Confirm Registration Email&lt;/a&gt;&lt;/p&gt;
@@ -105,6 +122,23 @@ namespace ShareMemories.Application.Resources {
         internal static string EnableTwoFactorAuthenticationTemplate {
             get {
                 return ResourceManager.GetString("EnableTwoFactorAuthenticationTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;p&gt;Hello {0}&lt;/p&gt;
+        ///
+        ///&lt;p&gt;There has been suspicious activity on your account and it has been locked.&lt;/p&gt;
+        ///
+        ///&lt;p&gt;You can request that your account is unlocked by calling the API lockoutGroup/UnlockRequestAsync&lt;/p&gt;
+        ///
+        ///&lt;p&gt;Administration Email: Support@MyDomain.Com&lt;/p&gt;
+        ///
+        ///&lt;p&gt;Thanking you,&lt;br/&gt;O&apos;Neill Says!&lt;/p&gt;.
+        /// </summary>
+        internal static string LockoutTemplate {
+            get {
+                return ResourceManager.GetString("LockoutTemplate", resourceCulture);
             }
         }
         
