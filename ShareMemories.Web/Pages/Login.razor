@@ -1,0 +1,57 @@
+﻿@page "/login"
+@using ShareMemories.Shared.DTOs
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@code {
+    private LoginUserDto loginModel = new LoginUserDto();
+    private bool loginFailed;
+    private string errorMessage = string.Empty;
+
+    private async Task HandleLogin()
+    {
+        loginFailed = false;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("AuthClient");
+            var response = await client.PostAsJsonAsync("api/auth/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Save token and HttpOnly cookie logic
+                var jwt = await response.Content.ReadAsStringAsync();
+                // Store JWT or handle HttpOnly cookie-based auth
+
+                // Redirect to protected page
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                loginFailed = true;
+                errorMessage = "Invalid login attempt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            loginFailed = true;
+            errorMessage = ex.Message;
+        }
+    }
+}
+
+<h3>Login</h3>
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText id="username" @bind-Value="loginModel.UserName" placeholder="Username" />
+    <InputText id="password" @bind-Value="loginModel.Password" placeholder="Password" type="password" />
+    <InputCheckbox id="isPersistent" @bind-Value="loginModel.IsPersistent" />
+    <label for="isPersistent">Remember me</label>
+    <button type="submit">Login</button>
+
+    @if (loginFailed)
+    {
+        <p class="text-danger">@errorMessage</p>
+    }
+</EditForm>

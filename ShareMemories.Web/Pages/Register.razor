@@ -1,0 +1,62 @@
+﻿@page "/register"
+@using ShareMemories.Shared.DTOs
+@inject IHttpClientFactory httpClientFactory
+@code {
+    private RegisterUserDto registerModel = new RegisterUserDto();
+    private bool success;
+    private bool showError;
+    private string errorMessage = string.Empty;
+
+    private async Task HandleRegister()
+    {
+        showError = false;
+        success = false;
+        try
+        {
+            var client = httpClientFactory.CreateClient("AuthClient");
+            var response = await client.PostAsJsonAsync("api/loginGroup/RegisterAsync", registerModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                success = true;
+                // Redirect to login page or show success message
+            }
+            else
+            {
+                showError = true;
+                errorMessage = "Registration failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            showError = true;
+            errorMessage = ex.Message;
+        }
+    }
+}
+
+<h3>Register</h3>
+<EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <!-- Add form fields for RegisterUserModel -->
+    <InputText id="firstName" @bind-Value="registerModel.FirstName" placeholder="First Name" />
+    <InputText id="lastName" @bind-Value="registerModel.LastName" placeholder="Last Name" />
+    <InputText id="email" @bind-Value="registerModel.Email" placeholder="Email" />
+    <InputText id="username" @bind-Value="registerModel.UserName" placeholder="Username" />
+    <InputText id="password" @bind-Value="registerModel.Password" placeholder="Password" type="password" />
+    <InputText id="confirmPassword" @bind-Value="registerModel.ConfirmPassword" placeholder="Confirm Password" type="password" />
+    <InputDate id="dateOfBirth" @bind-Value="registerModel.DateOfBirth" />
+    <InputText id="phoneNumber" @bind-Value="registerModel.PhoneNumber" placeholder="Phone Number" />
+    <button type="submit">Register</button>
+
+    @if (showError)
+    {
+        <p class="text-danger">@errorMessage</p>
+    }
+    @if (success)
+    {
+        <p class="text-success">Registration successful! Redirecting...</p>
+    }
+</EditForm>

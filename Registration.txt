@@ -1,0 +1,28 @@
+Version	:	23.x.x
+Platform(s)	:	Blazor
+License Key	:	MzQ1MDI2NkAzMjMzMmUzMDJlMzBNYXZNVm92N3JKMjNScEkxcUpyQVRLRnZGVmQ5Yk9hTHNGVDQ2NEFTZ0FNPQ==
+
+Version	:	22.1.34
+Platform(s)	:	NET MAUI, ASP.NET, ASP.NET Core, ASP.NET MVC, Blazor, File Formats, JavaScript, UWP, Windows Forms, WinUI, WPF, Xamarin
+License Key	:	Ngo9BigBOggjHTQxAR8/V1NGaF5cXmdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWXZedXRXQ2NdUER0W0Y=
+                OR (23.x.x)
+                Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdnWXZednRRRmRYVEBwVkU=
+
+static void Main()
+{
+    //Register Syncfusion license
+    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("YOUR LICENSE KEY");
+    Application.EnableVisualStyles();
+    Application.SetCompatibleTextRenderingDefault(false);
+    Application.Run(new Form1());
+}
+
+Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH1cc3VSQ2BeVU1zWkM=
+
+
+https://www.syncfusion.com/account/login
+bertoneill@yahoo.com
+Finnharps1
+
+Getting started
+https://blazor.syncfusion.com/documentation/introduction?_gl=1*y8halm*_ga*ODkyNjQ1MDkyLjE3MjU2MDM4MTM.*_ga_41J4HFMX1J*MTcyNTYwOTU1NS4yLjEuMTcyNTYxMDA5Ny4wLjAuMA..

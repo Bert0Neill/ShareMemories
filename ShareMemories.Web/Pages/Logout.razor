@@ -1,0 +1,29 @@
+﻿@page "/logout"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@code {
+    private async Task HandleLogout()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("AuthClient");
+            var response = await client.PostAsync("api/auth/logout", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/login");
+            }
+        }
+        catch (Exception)
+        {
+            // Handle error
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HandleLogout();
+    }
+}
+
+<h3>Logging out...</h3>

@@ -1,0 +1,49 @@
+﻿@page "/AuthenticateTwoFA"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@code {
+    //private TwoFactorModel twoFactorModel = new TwoFactorModel();
+    private bool failed;
+    private string errorMessage = string.Empty;
+
+    private async Task Handle2FA()
+    {
+        failed = false;
+
+        try
+        {
+            // var client = HttpClientFactory.CreateClient("AuthClient");
+            // var response = await client.PostAsJsonAsync("api/auth/2fa", twoFactorModel);
+
+            // if (response.IsSuccessStatusCode)
+            // {
+            //     // 2FA success - redirect
+            //     Navigation.NavigateTo("/");
+            // }
+            // else
+            // {
+            //     failed = true;
+            //     errorMessage = "Invalid 2FA code.";
+            // }
+        }
+        catch (Exception ex)
+        {
+            failed = true;
+            errorMessage = ex.Message;
+        }
+    }
+}
+
+<h3>Two-Factor Authentication</h3>
+<EditForm Model="twoFactorModel" OnValidSubmit="Handle2FA">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText id="code" @bind-Value="twoFactorModel.Code" placeholder="Enter 2FA code" />
+    <button type="submit">Verify</button>
+
+    @if (failed)
+    {
+        <p class="text-danger">@errorMessage</p>
+    }
+</EditForm>

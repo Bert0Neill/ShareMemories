@@ -9,9 +9,33 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Pages\AuthenticateTwoFA.razor" />
+    <Content Remove="Pages\Login.razor" />
+    <Content Remove="Pages\Logout.razor" />
+    <Content Remove="Pages\MainLayout.razor" />
+    <Content Remove="Pages\Register.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.7" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="8.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="Syncfusion.Blazor.Buttons" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.Core" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.Grid" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.Inputs" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.Lists" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.Popups" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="23.2.7" />
+    <PackageReference Include="Syncfusion.Licensing" Version="23.2.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ShareMemories.SharedDto\ShareMemories.SharedDto.csproj" />
   </ItemGroup>
 
   <ItemGroup>

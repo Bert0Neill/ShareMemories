@@ -1,0 +1,19 @@
+﻿@inherits LayoutComponentBase
+
+<PageTitle>My App</PageTitle>
+
+<div class="page">
+    <div class="sidebar">
+        <nav>
+            <ul>
+                <li><NavLink href="/login">Login</NavLink></li>
+                <li><NavLink href="/register">Register</NavLink></li>
+                <li><NavLink href="/logout">Logout</NavLink></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main">
+        @Body
+    </div>
+</div>
