@@ -963,7 +963,7 @@ namespace ShareMemories.Infrastructure.Services
 
             };
         }
-        public async Task<bool> IsUsernameOrEmailTakenAsync(string username, string email)
+        private async Task<bool> IsUsernameOrEmailTakenAsync(string username, string email)
         {
             var usernameTask = await _userManager.FindByNameAsync(username);
 
