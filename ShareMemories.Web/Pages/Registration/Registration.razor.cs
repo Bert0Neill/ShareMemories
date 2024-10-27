@@ -22,7 +22,8 @@ namespace ShareMemories.Web.Pages.Registration
             var result = await AuthenticationService.RegisterUser(_userForRegistration);
             if (!result.IsStatus)
             {
-                Errors = result.Message;
+                //Errors = result.Message;
+                Errors = new List<string> { result.Message };
                 ShowRegistrationErrors = true;
             }
             else
